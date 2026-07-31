@@ -1,10 +1,17 @@
+import { calculateIRR } from "./returns";
+
 export interface PropertyPosition {
   name: string;
   equityInvested: number;
-  irr: number;
+  cashFlowSeries: number[];
   annualNetCashFlow: number;
   dscr: number;
   propertyValue: number;
+}
+
+export interface PropertyIRRDetail {
+  name: string;
+  individualIRR: number;
 }
 
 export interface ConcentrationRisk {
@@ -15,7 +22,8 @@ export interface ConcentrationRisk {
 
 export interface PortfolioRollup {
   totalEquityInvested: number;
-  blendedIRR: number;
+  pooledPortfolioIRR: number;
+  propertyIRRs: PropertyIRRDetail[];
   totalAnnualNetCashFlow: number;
   portfolioDSCRFloor: number;
   totalPortfolioValue: number;
@@ -23,20 +31,41 @@ export interface PortfolioRollup {
 }
 
 /**
- * Blended IRR is a weighted average of each property's own IRR, weighted by
- * its share of total equity invested (not a re-derived IRR off pooled cash
- * flows). The DSCR floor is the single weakest-covered property in the
- * portfolio, since that's the one most likely to trip a lender covenant.
+ * IRR is not linear in cash flow timing, so a weighted average of each
+ * property's own IRR is not the IRR of the combined investment. The correct
+ * portfolio IRR pools every property's cash flow period-by-period into one
+ * series (year 0 with year 0, year 1 with year 1, ...) and runs IRR once on
+ * that pooled series. Properties with shorter hold periods contribute zero
+ * cash flow in the periods beyond their own hold, since they've already
+ * exited and returned capital by then.
  */
-export function rollupPortfolio(properties: PropertyPosition[]): PortfolioRollup {
+export function poolPortfolioCashFlows(properties: PropertyPosition[]): number[] {
+  const periodCount = Math.max(...properties.map((p) => p.cashFlowSeries.length));
+  const pooled = new Array(periodCount).fill(0);
+
+  for (const property of properties) {
+    property.cashFlowSeries.forEach((cashFlow, period) => {
+      pooled[period] += cashFlow;
+    });
+  }
+
+  return pooled;
+}
+
+export function rollupPortfolio(properties: PropertyPosition[], irrGuess = 0.1): PortfolioRollup {
   const totalEquityInvested = properties.reduce((sum, p) => sum + p.equityInvested, 0);
   const totalAnnualNetCashFlow = properties.reduce((sum, p) => sum + p.annualNetCashFlow, 0);
   const totalPortfolioValue = properties.reduce((sum, p) => sum + p.propertyValue, 0);
 
-  const blendedIRR = properties.reduce(
-    (sum, p) => sum + p.irr * (p.equityInvested / totalEquityInvested),
-    0
-  );
+  const pooledCashFlows = poolPortfolioCashFlows(properties);
+  const pooledPortfolioIRR = calculateIRR(pooledCashFlows, irrGuess);
+
+  // Kept for display purposes only (e.g. showing each property's own IRR
+  // next to the portfolio's true pooled IRR) — not used in any aggregate math.
+  const propertyIRRs: PropertyIRRDetail[] = properties.map((p) => ({
+    name: p.name,
+    individualIRR: calculateIRR(p.cashFlowSeries, irrGuess),
+  }));
 
   const portfolioDSCRFloor = Math.min(...properties.map((p) => p.dscr));
 
@@ -48,7 +77,8 @@ export function rollupPortfolio(properties: PropertyPosition[]): PortfolioRollup
 
   return {
     totalEquityInvested,
-    blendedIRR,
+    pooledPortfolioIRR,
+    propertyIRRs,
     totalAnnualNetCashFlow,
     portfolioDSCRFloor,
     totalPortfolioValue,
