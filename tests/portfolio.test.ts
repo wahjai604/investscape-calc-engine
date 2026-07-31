@@ -6,6 +6,10 @@ describe("rollupPortfolio", () => {
   // Three properties with different hold periods (5yr / 3yr / 4yr) and
   // different equity amounts, each built from the real cashflow.ts +
   // returns.ts engines.
+  //
+  // Pooled cash flow series and aggregate figures (total equity, DSCR floor,
+  // concentration risk) independently hand-verified — see Doc 54 Step 2
+  // reconciliation.
 
   // Property A: 5-year hold (same golden case as tests/returns.test.ts)
   const aCashFlows = projectCashFlows({
