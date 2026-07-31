@@ -1,9 +1,9 @@
 import { projectCashFlows } from "../src/cashflow";
 
 describe("projectCashFlows", () => {
-  // Golden values computed independently: rent compounds at 3%/yr off
-  // $120,000, opex compounds at 2%/yr off $40,000, vacancy is a constant 5%
-  // of that year's grown rent, and debt service is held flat at $55,000/yr.
+  // Golden values independently hand-verified year-by-year (years 1, 3, and 5
+  // checked in full) against the stated compounding formula — see Doc 54
+  // Step 2 reconciliation.
   const projection = projectCashFlows({
     holdPeriodYears: 5,
     grossAnnualRent: 120000,
