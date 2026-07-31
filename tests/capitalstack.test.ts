@@ -1,6 +1,9 @@
 import { calculateCapitalStack } from "../src/capitalstack";
 
 describe("calculateCapitalStack", () => {
+  // Golden values independently hand-verified against direct arithmetic
+  // — see Doc 54 Step 2 reconciliation.
+
   it("computes interest cost, total debt service, and blended cost of capital for a two-tranche deal", () => {
     // $700k senior debt @ 6% + $300k equity @ 15% target return
     const result = calculateCapitalStack([
@@ -20,7 +23,7 @@ describe("calculateCapitalStack", () => {
     expect(result.totalDebtService).toBeCloseTo(42000, 2);
 
     // 6% * 0.7 + 15% * 0.3 = 8.7%
-    expect(result.blendedCostOfCapital).toBeCloseTo(0.087, 4);
+    expect(result.weightedAverageCost).toBeCloseTo(0.087, 4);
   });
 
   it("computes interest cost, total debt service, and blended cost of capital for a three-tranche deal", () => {
@@ -45,6 +48,6 @@ describe("calculateCapitalStack", () => {
     expect(result.totalDebtService).toBeCloseTo(48000, 2);
 
     // 5.5% * 0.6 + 10% * 0.15 + 18% * 0.25 = 9.3%
-    expect(result.blendedCostOfCapital).toBeCloseTo(0.093, 4);
+    expect(result.weightedAverageCost).toBeCloseTo(0.093, 4);
   });
 });

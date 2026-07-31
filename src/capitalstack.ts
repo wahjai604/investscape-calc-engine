@@ -15,14 +15,14 @@ export interface CapitalStackResult {
   tranches: TrancheResult[];
   totalCapital: number;
   totalDebtService: number;
-  blendedCostOfCapital: number;
+  weightedAverageCost: number;
 }
 
 /**
- * Total debt service only sums the debt tranches (senior + mezzanine) since
- * equity has no scheduled payment. Blended cost of capital is a WACC-style
- * weighted average across the whole stack, including equity's target
- * return, weighted by each tranche's share of total capital.
+ * weightedAverageCost is a simple weighted average of each tranche's rate by
+ * its share of total capital — it is NOT WACC (F-102), since it has no
+ * (1 − Tc) tax shield on debt tranches. If a true tax-adjusted WACC is
+ * needed later, that's a separate calculation.
  */
 export function calculateCapitalStack(tranches: Tranche[]): CapitalStackResult {
   const totalCapital = tranches.reduce((sum, t) => sum + t.amount, 0);
@@ -37,12 +37,12 @@ export function calculateCapitalStack(tranches: Tranche[]): CapitalStackResult {
     .filter((t) => t.type !== "equity")
     .reduce((sum, t) => sum + t.interestCost, 0);
 
-  const blendedCostOfCapital = trancheResults.reduce((sum, t) => sum + t.rate * t.capitalWeight, 0);
+  const weightedAverageCost = trancheResults.reduce((sum, t) => sum + t.rate * t.capitalWeight, 0);
 
   return {
     tranches: trancheResults,
     totalCapital,
     totalDebtService,
-    blendedCostOfCapital,
+    weightedAverageCost,
   };
 }
