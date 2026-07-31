@@ -1,9 +1,9 @@
 import { qualifyForMortgage } from "../src/qualifying";
 
 describe("qualifyForMortgage", () => {
-  // Golden values computed from the actual amortization formula (semi-annual
-  // compounding) at the stress-tested qualifying rate of max(5.25%,
-  // contract + 2%) = 6.5% for a 4.5% contract rate.
+  // Golden values independently hand-verified against the FCAC-validated
+  // mortgage formula plus manual GDS/TDS arithmetic (see Doc 54 Step 2
+  // reconciliation) — not self-computed by the build process.
 
   it("qualifies when both GDS (<=39%) and TDS (<=44%) are within limits", () => {
     const result = qualifyForMortgage({
