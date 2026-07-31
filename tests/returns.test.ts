@@ -2,9 +2,11 @@ import { projectCashFlows } from "../src/cashflow";
 import { buildInvestmentCashFlowSeries, calculateIRR, calculateMIRR, calculateEquityMultiple } from "../src/returns";
 
 describe("returns calculators for a 5-year hold", () => {
-  // Cash flows come straight from the cashflow engine's golden 5-year
-  // projection (see tests/cashflow.test.ts): $120,000 starting rent at 3%
-  // growth, $40,000 opex at 2% growth, 5% vacancy, $55,000/yr debt service.
+  // Golden values independently hand-verified: equity multiple confirmed by
+  // direct arithmetic, IRR confirmed by discounting the cash flow series at
+  // the candidate rate and checking it nets to the initial outlay, MIRR
+  // confirmed by compounding positive flows forward and discounting the
+  // outlay back — see Doc 54 Step 2 reconciliation.
   const annualCashFlows = projectCashFlows({
     holdPeriodYears: 5,
     grossAnnualRent: 120000,
