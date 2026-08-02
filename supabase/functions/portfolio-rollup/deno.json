@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@formulajs/formulajs": "npm:@formulajs/formulajs@^4.6.1"
+  }
+}
