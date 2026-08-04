@@ -1,0 +1,367 @@
+InvestScape Calculation Engine — Test Execution Report
+Run timestamp: 2026-08-04 (see system clock at capture time below)
+Command: npm test (jest), plus jest --json for structured per-test detail
+========================================================================
+
+RAW `npm test` OUTPUT
+---------------------
+Tue, Aug  4, 2026 10:20:50 AM
+
+
+> investscape-calc-engine@1.0.0 test
+> jest
+
+
+========================================================================
+PER-SUITE BREAKDOWN (from jest --json)
+========================================================================
+=== Per-Suite Breakdown ===
+tests/qualifying.test.ts: 5 passed, 0 failed, 0 pending (total 5)
+tests/cashflow.test.ts: 12 passed, 0 failed, 0 pending (total 12)
+tests/dscr.test.ts: 4 passed, 0 failed, 0 pending (total 4)
+tests/amortization.test.ts: 13 passed, 0 failed, 0 pending (total 13)
+tests/portfolio-rollup.test.ts: 10 passed, 0 failed, 0 pending (total 10)
+tests/ptt.test.ts: 21 passed, 0 failed, 0 pending (total 21)
+tests/data-provenance.test.ts: 29 passed, 0 failed, 0 pending (total 29)
+tests/scenario.test.ts: 20 passed, 0 failed, 0 pending (total 20)
+tests/portfolio.test.ts: 8 passed, 0 failed, 0 pending (total 8)
+tests/fx-conversion.test.ts: 21 passed, 0 failed, 0 pending (total 21)
+tests/break-even.test.ts: 19 passed, 0 failed, 0 pending (total 19)
+tests/holding-period-sensitivity.test.ts: 18 passed, 0 failed, 0 pending (total 18)
+tests/rental-waterfall.test.ts: 24 passed, 0 failed, 0 pending (total 24)
+tests/returns.test.ts: 4 passed, 0 failed, 0 pending (total 4)
+tests/tax-optimization.test.ts: 30 passed, 0 failed, 0 pending (total 30)
+tests/brrrr.test.ts: 13 passed, 0 failed, 0 pending (total 13)
+tests/cmhc.test.ts: 5 passed, 0 failed, 0 pending (total 5)
+tests/refinance.test.ts: 13 passed, 0 failed, 0 pending (total 13)
+tests/capitalstack.test.ts: 7 passed, 0 failed, 0 pending (total 7)
+tests/exit.test.ts: 12 passed, 0 failed, 0 pending (total 12)
+tests/mortgage.test.ts: 2 passed, 0 failed, 0 pending (total 2)
+tests/appreciation.test.ts: 10 passed, 0 failed, 0 pending (total 10)
+
+=== Totals ===
+Suites: 22 | Tests: 300 | Passed: 300 | Failed: 0 | Pending: 0
+
+=== Full Test Names Per File ===
+--- tests/qualifying.test.ts ---
+  [passed] qualifyForMortgage qualifies when both GDS (<=39%) and TDS (<=44%) are within limits
+  [passed] qualifyForMortgage fails on GDS when housing costs alone exceed 39% of income
+  [passed] qualifyForMortgage fails on TDS when other debt pushes total obligations over 44% while GDS stays within limits
+  [passed] calculateStressTestRate uses the 5.25% floor when contract rate + 2% is below it
+  [passed] calculateStressTestRate uses contract rate + 2% when it exceeds the 5.25% floor
+--- tests/cashflow.test.ts ---
+  [passed] projectCashFlows produces one row per year of the hold period
+  [passed] projectCashFlows matches the golden figures for year 1 (no growth applied yet)
+  [passed] projectCashFlows matches the golden figures for year 3 (rent and opex compounded twice)
+  [passed] projectCashFlows matches the golden figures for year 5, the final year of the hold
+  [passed] projectCashFlows grows net cash flow monotonically since rent growth outpaces expense growth on a flat debt service
+  [passed] projectCashFlows (E9 — real debt service via amortizationSchedule) produces one row per year, each carrying the real interest/principal split
+  [passed] projectCashFlows (E9 — real debt service via amortizationSchedule) year 1: debtService/interestPaid/principalPaid match the independently derived annuity figures
+  [passed] projectCashFlows (E9 — real debt service via amortizationSchedule) year 3: debtService/interestPaid/principalPaid match the independently derived annuity figures
+  [passed] projectCashFlows (E9 — real debt service via amortizationSchedule) year 5: debtService/interestPaid/principalPaid match the independently derived annuity figures
+  [passed] projectCashFlows (E9 — real debt service via amortizationSchedule) debtService stays the full P&I payment (Doc 01 B6/B10), equal to interestPaid + principalPaid every year
+  [passed] projectCashFlows (E9 — real debt service via amortizationSchedule) cumulative principalPaid across all 5 years equals the loan's principal reduction over 60 months (706000 - 622781.27)
+  [passed] projectCashFlows (E9 — real debt service via amortizationSchedule) legacy flat-annualDebtService input still works unchanged (no interestPaid/principalPaid)
+--- tests/dscr.test.ts ---
+  [passed] calculateNOI subtracts vacancy allowance and operating expenses from gross rent
+  [passed] calculateDSCR divides NOI by annual debt service
+  [passed] evaluateDSCR flags a property meeting the 1.20 lender minimum
+  [passed] evaluateDSCR flags a property falling below the 1.20 lender minimum
+--- tests/amortization.test.ts ---
+  [passed] amortizationSchedule / remainingBalance matches the independently hand-verified year-5 (month 60) balance of $622,781
+  [passed] amortizationSchedule / remainingBalance reaches a $0 balance at the final row (month 300) of a fully amortizing loan
+  [passed] amortizationSchedule / remainingBalance pays off exactly the original principal across all rows summed
+  [passed] amortizationSchedule / remainingBalance remainingBalance(loan, 60) agrees with amortizationSchedule(loan, 60)'s last row — same underlying logic, not two that could drift apart
+  [passed] trancheAmortizationSchedule senior_debt (Canadian semi-annual compounding) matches the hand-verified month-60 balance of $622,781
+  [passed] trancheAmortizationSchedule senior_debt (Canadian semi-annual compounding) fully amortizes to a $0 balance at month 300
+  [passed] trancheAmortizationSchedule senior_debt (Canadian semi-annual compounding) each row's beginningBalance matches the prior row's endingBalance
+  [passed] trancheAmortizationSchedule senior_debt (Canadian semi-annual compounding) rolls up to a 25-row annual schedule whose year-5 ending balance matches the month-60 figure
+  [passed] trancheAmortizationSchedule equity (US monthly compounding) matches the published $599.55/month payment
+  [passed] trancheAmortizationSchedule equity (US monthly compounding) matches the independently hand-computed month-12 balance of $98,771.99
+  [passed] trancheAmortizationSchedule equity (US monthly compounding) matches the independently hand-computed month-24 balance of $97,468.24
+  [passed] trancheAmortizationSchedule equity (US monthly compounding) fully amortizes to a $0 balance at month 360
+  [passed] trancheAmortizationSchedule mezzanine (falls back to US monthly, like equity) produces the same schedule as an equity tranche with identical amount/rate/term
+--- tests/portfolio-rollup.test.ts ---
+  [passed] portfolio-rollup Edge Function handler HTTP response layer fidelity (does not transform/corrupt rollupPortfolio's output) buildSuccessBody's pooledPortfolioIRR matches calling rollupPortfolio() directly with the same data
+  [passed] portfolio-rollup Edge Function handler gating (Prompt 5g rule, Doc 51) gates the whole portfolio when one of three properties is missing hold_period_assumption_years
+  [passed] portfolio-rollup Edge Function handler gating (Prompt 5g rule, Doc 51) does not silently exclude the incomplete property and return a number for the rest
+  [passed] portfolio-rollup Edge Function handler gating (Prompt 5g rule, Doc 51) checkGating flags both fields when both are missing
+  [passed] portfolio-rollup Edge Function handler malformed per-property data names the property and field instead of a generic failure
+  [passed] portfolio-rollup Edge Function handler cashFlowSeries construction gap (Doc 54 E10 + missing growth-rate schema fields) blocks with a named reason instead of inventing exit value / growth rate assumptions
+  [passed] portfolio-rollup Edge Function handler no owned properties returns an explicit empty state rather than calling rollupPortfolio with an empty array
+  [passed] portfolio-rollup Edge Function handler authentication rejects a request with no Authorization header
+  [passed] portfolio-rollup Edge Function handler authentication rejects a request with an invalid/expired JWT
+  [passed] portfolio-rollup Edge Function handler authentication never accepts a user_id from the request — userId comes only from the verified JWT
+--- tests/ptt.test.ts ---
+  [passed] calculateBCPTT — general (non-FTHB) scenarios $550K (Template v2, investor, no FTHB) → $9,000 PTT
+  [passed] calculateBCPTT — general (non-FTHB) scenarios $200K → $2,000 (1% bracket only)
+  [passed] calculateBCPTT — general (non-FTHB) scenarios $2M → $2,000 + $36,000 = $38,000 (crosses into the 2% bracket)
+  [passed] calculateBCPTT — general (non-FTHB) scenarios residential property over $3,000,000 includes the additional 2% surcharge
+  [passed] calculateBCPTT — general (non-FTHB) scenarios exactly $3,000,000 does NOT trigger the surcharge (threshold is 'over', not 'at')
+  [passed] calculateBCPTT — FTHB full exemption $500K, FTHB eligible, FMV=$500K, size=0.3ha, principal residence → $0 PTT
+  [passed] calculateBCPTT — FTHB full exemption $400K, FTHB eligible → $0 PTT (entire price is under the $500K exemption threshold)
+  [passed] calculateBCPTT — FTHB full exemption $835K, FTHB eligible, FMV=$835K (at the full-exemption FMV threshold) → still 'full' exemption type, but only the first $500K is tax-free
+  [passed] calculateBCPTT — FTHB partial exemption (FMV phase-out band $835K–$860K) $850K, FTHB, FMV=$850K → partial exemption (40% of the full exemption remains, i.e. 60% phased out)
+  [passed] calculateBCPTT — FTHB partial exemption (FMV phase-out band $835K–$860K) $847.5K (exact midpoint of the phase-out band) → 50% phase-out
+  [passed] calculateBCPTT — FTHB partial exemption (FMV phase-out band $835K–$860K) $860K → 0% exemption (at the phase-out ceiling, exemption_type becomes 'none')
+  [passed] calculateBCPTT — FTHB downgraded to partial (secondary building / oversized lot, FMV ≤ $835K) $600K, FTHB, hasSecondaryBuilding=true, FMV=$600K → partial exemption (FMV-in-range means 100% of the exemption still applies, just relabeled 'partial')
+  [passed] calculateBCPTT — FTHB downgraded to partial (secondary building / oversized lot, FMV ≤ $835K) $600K, FTHB, propertySize_hectares=0.6 (over the 0.5ha limit), FMV=$600K → partial exemption
+  [passed] calculateBCPTT — FTHB downgraded to partial (secondary building / oversized lot, FMV ≤ $835K) disqualification still routes through the FMV phase-out ratio: an oversized lot with FMV in the $835K-$860K band gets both effects
+  [passed] calculateUSPTT returns ptt_amount: null with the required message
+  [passed] calculatePTT — dispatch US property → ptt_amount: null
+  [passed] calculatePTT — dispatch other province (AB) → ptt_amount: null
+  [passed] calculatePTT — dispatch other province (ON) → ptt_amount: null
+  [passed] calculatePTT — dispatch province matching is case-insensitive
+  [passed] calculatePTT — dispatch BC → routes to calculateBCPTT with the input's fields
+  [passed] calculatePTT — dispatch BC FTHB case dispatches through to the full exemption path
+--- tests/data-provenance.test.ts ---
+  [passed] calculateDataProvenance 1. all fields recent + high confidence overallDataQualityScore is very high (~99%), not merely 92-95%
+  [passed] calculateDataProvenance 1. all fields recent + high confidence every field shows a High confidence label
+  [passed] calculateDataProvenance 1. all fields recent + high confidence produces no recommendedActions (nothing missing, nothing low-confidence, nothing stale)
+  [passed] calculateDataProvenance 2. mixed sources (high + low) overallDataQualityScore reflects the weighted mix (82.08%), not a simple average
+  [passed] calculateDataProvenance 2. mixed sources (high + low) purchasePrice (appraised, high confidence, fresh) scores highest of the three
+  [passed] calculateDataProvenance 2. mixed sources (high + low) grossAnnualRent and annualOperatingExpenses score Moderate
+  [passed] calculateDataProvenance 3. stale data (all fields 1 year old) recencyScore is 0 for every field (365+ days old)
+  [passed] calculateDataProvenance 3. stale data (all fields 1 year old) quality degrades significantly vs. the same data fresh (94.5 fresh vs 74.5 stale — a 20-point drop)
+  [passed] calculateDataProvenance 3. stale data (all fields 1 year old) recommendedActions flags every field: "X has not been updated in over 1 year — verify current market."
+  [passed] calculateDataProvenance 4. missing fields fieldsTracked has exactly 1 entry
+  [passed] calculateDataProvenance 4. missing fields recommendedActions lists all 7 missing fields
+  [passed] calculateDataProvenance 4. missing fields flags the missing operating-expenses field using its display name ("Expenses has not yet been provided.") — not the raw field name annualOperatingExpenses
+  [passed] calculateDataProvenance 4. missing fields does not include the missing fields in fieldsTracked
+  [passed] calculateDataProvenance 5. edge case: recent but low confidence confidenceLabel is "Low" despite the field being only 2 days old
+  [passed] calculateDataProvenance 5. edge case: recent but low confidence confidence materially degrades quality even with perfect recency: low-confidence scores well below the high-confidence equivalent
+  [passed] calculateDataProvenance 5. edge case: recent but low confidence gets flagged in recommendedActions for low confidence
+  [passed] calculateDataProvenance 6. edge case: old but high confidence confidenceLabel stays High regardless of age (label is confidence-only, not composite quality)
+  [passed] calculateDataProvenance 6. edge case: old but high confidence age still meaningfully discounts the composite qualityScore vs. the same data fresh — confidence offsets but doesn't fully cancel the age penalty
+  [passed] calculateDataProvenance 6. edge case: old but high confidence gets flagged for staleness even though confidence is high
+  [passed] calculateDataProvenance 7. full golden case (Template v2 deal) overallDataQualityScore lands in the expected 80-88% band
+  [passed] calculateDataProvenance 7. full golden case (Template v2 deal) summary text includes the rounded quality score
+  [passed] calculateDataProvenance 7. full golden case (Template v2 deal) summary reports "none" for key uncertainties when no field is Low/Uncertain
+  [passed] calculateDataProvenance confidenceLabel boundaries High: >= 0.8
+  [passed] calculateDataProvenance confidenceLabel boundaries Moderate: >= 0.5 and < 0.8
+  [passed] calculateDataProvenance confidenceLabel boundaries Low: >= 0.25 and < 0.5
+  [passed] calculateDataProvenance confidenceLabel boundaries Uncertain: < 0.25
+  [passed] calculateDataProvenance age calculation (ageInDays) computes exact day counts against the fixed reference date
+  [passed] calculateDataProvenance age calculation (ageInDays) defaults to the real current time when now is omitted (doesn't throw, produces a non-negative age)
+  [passed] calculateDataProvenance recommendedActions content distinguishes the three message types: missing, low confidence, and stale
+--- tests/scenario.test.ts ---
+  [passed] calculateScenarioComparison typical usage (base/optimistic/pessimistic) ranks IRR as Pessimistic < Base < Optimistic
+  [passed] calculateScenarioComparison typical usage (base/optimistic/pessimistic) identifies bestCase/worstCase by name
+  [passed] calculateScenarioComparison typical usage (base/optimistic/pessimistic) recommends when every scenario has positive IRR
+  [passed] calculateScenarioComparison typical usage (base/optimistic/pessimistic) Base scenario matches independently verified golden figures
+  [passed] calculateScenarioComparison typical usage (base/optimistic/pessimistic) cashOnCash is identical across scenarios sharing the same baseDeal (year 1 predates any growth compounding)
+  [passed] calculateScenarioComparison cap rate exit method produces a different sale price than flat appreciation for the same scenario
+  [passed] calculateScenarioComparison single scenario (just base case): bestCase equals worstCase equals that scenario
+  [passed] calculateScenarioComparison mixed results: warns when scenarios disagree in sign
+  [passed] calculateScenarioComparison all scenarios negative: warns accordingly
+  [passed] calculateScenarioComparison sensitivity: rent growth vs expense growth vs appreciation higher rent growth increases IRR
+  [passed] calculateScenarioComparison sensitivity: rent growth vs expense growth vs appreciation higher expense growth decreases IRR
+  [passed] calculateScenarioComparison sensitivity: rent growth vs expense growth vs appreciation higher appreciation increases IRR
+  [passed] calculateScenarioComparison sensitivity: rent growth vs expense growth vs appreciation appreciation has a much larger effect on IRR than rent or expense growth over the same range, since it drives a lump-sum exit value rather than incremental annual cash flow
+  [passed] calculateScenarioComparison selling costs handling 6% selling costs: net equity calculated, warning shows the deduction
+  [passed] calculateScenarioComparison selling costs handling 0% selling costs (default, field omitted): net equity is null, warning prompts to add a realistic rate
+  [passed] calculateScenarioComparison selling costs handling explicit 0% behaves the same as omitting the field entirely
+  [passed] calculateScenarioComparison selling costs handling 3% selling costs: calculated correctly
+  [passed] calculateScenarioComparison selling costs handling applies uniformly across every scenario in the comparison, not just the first
+  [passed] calculateScenarioComparison selling costs handling gross projectedEquity and irr are unaffected by sellingCostsPercent — selling costs are reported alongside, not folded into the existing fields
+  [passed] calculateScenarioComparison selling costs handling warning text is actionable: the zero-cost case names a concrete suggested rate, the nonzero case states the exact dollar deduction
+--- tests/portfolio.test.ts ---
+  [passed] rollupPortfolio pools cash flows period-by-period, treating a shorter hold's missing years as zero
+  [passed] rollupPortfolio computes the true pooled portfolio IRR from the combined cash flow series, matching an independent hand calculation
+  [passed] rollupPortfolio keeps each property's own individual IRR available for display, separate from the pooled figure
+  [passed] rollupPortfolio proves a naive equity-weighted average of individual IRRs is NOT the same as (and is wrong relative to) the true pooled IRR
+  [passed] rollupPortfolio sums total equity invested across all properties
+  [passed] rollupPortfolio sums total annual net cash flow (year 1) across all properties
+  [passed] rollupPortfolio takes the DSCR floor as the weakest-covered property (Property B at 1.15)
+  [passed] rollupPortfolio computes each property's concentration as a percent of total portfolio value
+--- tests/fx-conversion.test.ts ---
+  [passed] calculateFXConversion 1. same currency (CAD/CAD) fxRate is normalized to 1.0, regardless of the input value
+  [passed] calculateFXConversion 1. same currency (CAD/CAD) dealMetricsInDealCurrency and dealMetricsInInvestorCurrency are identical (no conversion)
+  [passed] calculateFXConversion 1. same currency (CAD/CAD) IRR is unchanged
+  [passed] calculateFXConversion 1. same currency (CAD/CAD) fxSensitivity shows zero movement — no FX exposure when currencies match
+  [passed] calculateFXConversion 2. USD to CAD conversion (1.36 rate) conversion math is exact: $408K CAD purchase, $27.2K CAD cash flow, $204K CAD equity
+  [passed] calculateFXConversion 2. USD to CAD conversion (1.36 rate) IRR is still 10% in both the deal-currency and investor-currency views
+  [passed] calculateFXConversion 2. USD to CAD conversion (1.36 rate) rateIfIRRTarget10percent recovers the entry rate (1.36), since the deal's own baseline IS 10%
+  [passed] calculateFXConversion 3. CAD to USD conversion (1.36 rate) — inverse direction conversion math is exact: $404.4K USD purchase (550K/1.36), $11K USD CF, $220.6K USD equity
+  [passed] calculateFXConversion 3. CAD to USD conversion (1.36 rate) — inverse direction this is genuinely division, not the multiply used for USD->CAD
+  [passed] calculateFXConversion 4. FX sensitivity — rate increase (USD strengthens, USD deal / CAD investor) irrAt_plus5pct_rate > baseline IRR — more CAD per USD at exit is better for the CAD investor
+  [passed] calculateFXConversion 5. FX sensitivity — rate decrease (USD weakens, USD deal / CAD investor) irrAt_minus5pct_rate < baseline IRR — fewer CAD per USD at exit is worse for the CAD investor
+  [passed] calculateFXConversion 6. bisection search for a target IRR rateIfIRRTarget5percent is found via bisection (below the entry rate, since 5% < the 10% baseline in an increasing/multiply relationship)
+  [passed] calculateFXConversion 6. bisection search for a target IRR applying the solved rate as the exit rate reproduces ~5% IRR (round-trip verification)
+  [passed] calculateFXConversion 7. inverse direction (CAD deal / USD investor): sensitivity direction is reversed a rate increase now HURTS the investor (fewer USD per CAD), the opposite of the USD-deal/CAD-investor case
+  [passed] calculateFXConversion 7. inverse direction (CAD deal / USD investor): sensitivity direction is reversed rateIfIRRTarget10percent still recovers the entry rate (1.36) — the baseline calibration holds regardless of direction
+  [passed] calculateFXConversion 8. edge case: very high/low FX rates a very low rate (0.90) computes correctly with no division errors
+  [passed] calculateFXConversion 8. edge case: very high/low FX rates a very high rate (2.00) computes correctly with no division errors
+  [passed] calculateFXConversion 8. edge case: very high/low FX rates a division-mode edge case (CAD deal / USD investor) at an extreme rate also computes cleanly
+  [passed] calculateFXConversion entry-locked equity: the entry outflow uses the entry rate, unaffected by exit-rate exploration purchasePrice in investor currency is exactly purchasePrice × entry fxRate, matching what feeds fxSensitivity's entry leg
+  [passed] calculateFXConversion summary string includes both currencies, both purchase prices, the shared IRR, and both sensitivity IRRs
+  [passed] calculateFXConversion summary string same-currency case explicitly notes IRR doesn't change with conversion
+--- tests/break-even.test.ts ---
+  [passed] breakEvenDownPayment Template v2 golden case: solves down% for zero CF at the 10% management fee
+  [passed] breakEvenDownPayment Template v2 golden case: down_amt_needed is down_pct_for_zero_cf applied to purchase price
+  [passed] breakEvenDownPayment Template v2 golden case: current_annual_cf and down_pct_current reflect the input's actual down payment
+  [passed] breakEvenDownPayment negative CF scenario: when $0 CF is unreachable even at 95% down, clamps to the 95% boundary
+  [passed] breakEvenDownPayment positive CF scenario: when CF is already positive at 5% down, clamps to the 5% boundary
+  [passed] breakEvenDownPayment US property (6.5% rate, 30yr amortization): solves a higher down% than the Canadian golden case
+  [passed] breakEvenDownPayment months_to_zero_cf is 0 when there is no vacancy to recover from
+  [passed] breakEvenDownPayment months_to_zero_cf is null when cumulative cash flow never turns positive within the 12-month year
+  [passed] breakEvenDownPayment months_to_zero_cf returns the month cumulative cash flow first turns non-negative, once occupied
+  [passed] breakEvenMonthlyPayment Template v2: monthly_payment_for_zero_cf equals NOI / 12
+  [passed] breakEvenMonthlyPayment Template v2: current_monthly_payment matches mortgage.ts's Canadian payment function
+  [passed] breakEvenMonthlyPayment monthly_shortfall equals current_monthly_payment - monthly_payment_for_zero_cf
+  [passed] breakEvenMonthlyPayment annual_shortfall equals monthly_shortfall * 12
+  [passed] breakEvenMonthlyPayment annual_shortfall is the negative of annual cash flow at the current down payment
+  [passed] breakEvenMonthlyPayment positive CF scenario: current payment is below what NOI could support, so shortfall is negative
+  [passed] breakEvenMonthlyPayment US property: current_monthly_payment matches mortgage.ts's US payment function, NOI-based target unchanged
+  [passed] calculateBreakEven mode="down_payment" returns the same shape/values as breakEvenDownPayment()
+  [passed] calculateBreakEven mode="monthly_payment" returns the same shape/values as breakEvenMonthlyPayment()
+  [passed] calculateBreakEven defaults to down_payment mode when no mode argument is passed
+--- tests/holding-period-sensitivity.test.ts ---
+  [passed] calculateHoldingPeriodSensitivity Template v2 golden case (30 years of hold periods) generates exactly 30 entries, for holdYears 1 through 30
+  [passed] calculateHoldingPeriodSensitivity Template v2 golden case (30 years of hold periods) IRR peaks at year 4 (~11.68%) then declines
+  [passed] calculateHoldingPeriodSensitivity Template v2 golden case (30 years of hold periods) bestHoldPeriodByIRR = 4
+  [passed] calculateHoldingPeriodSensitivity Template v2 golden case (30 years of hold periods) IRR at year 5 is ~11.58% (below year 4's peak)
+  [passed] calculateHoldingPeriodSensitivity Template v2 golden case (30 years of hold periods) IRR converges toward a long-run value but is still moving (by shrinking increments) at year 30 — not a hard plateau
+  [passed] calculateHoldingPeriodSensitivity break-even analysis finds a breakEvenYear (cumulative CF eventually reaches initial equity)
+  [passed] calculateHoldingPeriodSensitivity break-even analysis breakEvenYear is 28 for the Template v2 golden case
+  [passed] calculateHoldingPeriodSensitivity break-even analysis cumulativeCashFlow is below equityInvested the year before breakEvenYear, and at/above it at breakEvenYear
+  [passed] calculateHoldingPeriodSensitivity break-even analysis returns null when cumulative CF never reaches equityInvested within 30 years
+  [passed] calculateHoldingPeriodSensitivity cash-on-cash invariant cashOnCash is identical across all 30 hold periods (year 1 CF doesn't depend on hold length)
+  [passed] calculateHoldingPeriodSensitivity selling costs handling sellingCostsPercent = 0 (default): projectedEquityNetOfSellingCosts is null throughout
+  [passed] calculateHoldingPeriodSensitivity selling costs handling omitting sellingCostsPercent behaves the same as explicit 0
+  [passed] calculateHoldingPeriodSensitivity selling costs handling sellingCostsPercent = 0.06: projectedEquityNetOfSellingCosts < projectedEquity for every hold period
+  [passed] calculateHoldingPeriodSensitivity selling costs handling net equity = gross equity - (sale price × sellingCostsPercent) — verified at year 5
+  [passed] calculateHoldingPeriodSensitivity exit method comparison (cap-rate vs flat-growth) IRRs diverge — the cap-rate method is meaningfully lower than flat 3% appreciation by year 10
+  [passed] calculateHoldingPeriodSensitivity exit method comparison (cap-rate vs flat-growth) the resulting equity curves are substantially different by year 10, not just marginally
+  [passed] calculateHoldingPeriodSensitivity early exits (years 1-3) IRR is lower in year 1 than at the year-4 peak
+  [passed] calculateHoldingPeriodSensitivity early exits (years 1-3) cumulative CF is small (still negative) in the first few years — it hasn't had time to accumulate
+--- tests/rental-waterfall.test.ts ---
+  [passed] calculateRentalWaterfall 1. single stabilized unit (no ramp) every month shows the same $2,000 gross / $100 vacancy / $1,900 effective figures
+  [passed] calculateRentalWaterfall 1. single stabilized unit (no ramp) every year shows $24K gross / $1.2K vacancy / $22.8K effective
+  [passed] calculateRentalWaterfall 1. single stabilized unit (no ramp) rampImpact text reads "No ramp — immediate occupancy from month 1."
+  [passed] calculateRentalWaterfall 2. two units, staggered online months 1-6: Unit A only ($1,900 effective)
+  [passed] calculateRentalWaterfall 2. two units, staggered online months 7-12: A + B ramping ($1,900 + $750 = $2,650 effective)
+  [passed] calculateRentalWaterfall 2. two units, staggered online month 13+: A + B stabilized — $3,325 effective (not the brief's ~$3.35K estimate, since Unit B's stabilized vacancy rate wasn't specified there)
+  [passed] calculateRentalWaterfall 2. two units, staggered online newUnitsThisMonth flags Unit A at month 1 and Unit B at month 7, and only those months
+  [passed] calculateRentalWaterfall 2. two units, staggered online annualSummary shows the ramp progression: rampedInUnits goes from 1 (year 1, B still ramping) to 2 (year 2+, both stabilized)
+  [passed] calculateRentalWaterfall 3. complex 3-unit phased occupancy newUnitsThisMonth flags each unit's actual arrival month (1, 4, 13)
+  [passed] calculateRentalWaterfall 3. complex 3-unit phased occupancy the stepped curve transitions correctly through each phase
+  [passed] calculateRentalWaterfall 3. complex 3-unit phased occupancy each ramp period's rampedInUnits count progresses correctly by year
+  [passed] calculateRentalWaterfall 4. zero vacancy (100% occupancy) no vacancy deduction: $24K gross = $24K effective, $0 vacancy loss
+  [passed] calculateRentalWaterfall 5. multiple vacancy rates (per-unit, not uniform) each unit's vacancy loss uses its own rate, not a shared/uniform one
+  [passed] calculateRentalWaterfall 6. ramp with high occupancy discount (low ramp occupancy) month 1 effective rent = ($2K × 0.95) + ($1.5K × 0.20) = $1,900 + $300 = $2,200
+  [passed] calculateRentalWaterfall 6. ramp with high occupancy discount (low ramp occupancy) occupancyDuringRamp is applied directly (20% occupancy, not the stabilized vacancy rate)
+  [passed] calculateRentalWaterfall 7. long hold (24-month analysis): year 1 vs year 2 ramp progression annualSummary has exactly 2 years
+  [passed] calculateRentalWaterfall 7. long hold (24-month analysis): year 1 vs year 2 ramp progression rampedInUnits increases from year 1 to year 2 (2 → 3)
+  [passed] calculateRentalWaterfall 7. long hold (24-month analysis): year 1 vs year 2 ramp progression effectiveIncome also increases year over year as units stabilize
+  [passed] calculateRentalWaterfall 7. long hold (24-month analysis): year 1 vs year 2 ramp progression summary text reflects stabilization by the final year
+  [passed] calculateRentalWaterfall 8. edge case: unit starts at month 0 collects rent starting in month 1 (the first full month), same as rampStartMonth: 1 would
+  [passed] calculateRentalWaterfall 8. edge case: unit starts at month 0 no off-by-one error: newUnitsThisMonth correctly flags the unit in month 1, not never (month 0 doesn't exist in the series)
+  [passed] calculateRentalWaterfall 8. edge case: unit starts at month 0 is counted as fully ramped (no ramp at all) from year 1
+  [passed] calculateRentalWaterfall rampImpact text validation describes a ramp period using the inclusive last-ramp-month convention (rampEndMonth - 1)
+  [passed] calculateRentalWaterfall rampImpact text validation describes no-ramp units with the immediate-occupancy message
+--- tests/returns.test.ts ---
+  [passed] returns calculators for a 5-year hold builds the year 0-5 series with a negative outlay and the exit value folded into year 5
+  [passed] returns calculators for a 5-year hold matches the golden IRR
+  [passed] returns calculators for a 5-year hold matches the golden MIRR at a 6% finance rate and 8% reinvestment rate
+  [passed] returns calculators for a 5-year hold matches the golden equity multiple
+--- tests/tax-optimization.test.ts ---
+  [passed] calculateTaxOptimization 1. US residential depreciation annualDepreciation = $320K / 27.5yr ≈ $11,636/year
+  [passed] calculateTaxOptimization 1. US residential depreciation totalDepreciationOverHold = annualDepreciation × 5 ≈ $58,182
+  [passed] calculateTaxOptimization 1. US residential depreciation taxSavingsFromDepreciation ≈ $20,364/year (totalDepreciationOverHold × 35%)
+  [passed] calculateTaxOptimization 1. US residential depreciation breakdown string (summary) reflects the per-year tax savings, total tax due, and after-tax IRR
+  [passed] calculateTaxOptimization 2. US commercial depreciation annualDepreciation = $450K / 39yr ≈ $11,538/year
+  [passed] calculateTaxOptimization 2. US commercial depreciation is1031Eligible is true (US)
+  [passed] calculateTaxOptimization 2. US commercial depreciation the 39-year commercial life produces meaningfully less annual depreciation per dollar of improvement than the 27.5-year residential life
+  [passed] calculateTaxOptimization 2. US commercial depreciation breakdown string (summary) is present and well-formed
+  [passed] calculateTaxOptimization 3. Canada residential (CCA declining balance) totalDepreciationOverHold ≈ $82K (declining balance, not straight-line)
+  [passed] calculateTaxOptimization 3. Canada residential (CCA declining balance) annualDepreciation is reported as the average over the hold (totalDepreciationOverHold / 5), not a flat constant
+  [passed] calculateTaxOptimization 3. Canada residential (CCA declining balance) CCA declines each year: hand-verifying the year-by-year 4% declining-balance schedule sums to totalDepreciationOverHold
+  [passed] calculateTaxOptimization 3. Canada residential (CCA declining balance) is1031Eligible is false (Canada has no like-kind exchange equivalent)
+  [passed] calculateTaxOptimization 3. Canada residential (CCA declining balance) breakdown string (summary) reflects the Canadian figures
+  [passed] calculateTaxOptimization 4. recapture tax (no double-counting) cost basis = purchasePrice - accumulated depreciation ≈ $400K - $58,182 = $341,818
+  [passed] calculateTaxOptimization 4. recapture tax (no double-counting) total gain (capitalGain) = salePrice - costBasis ≈ $500K - $341,818 = $158,182
+  [passed] calculateTaxOptimization 4. recapture tax (no double-counting) recaptured = min(accumulated depreciation, total gain) ≈ $58,182
+  [passed] calculateTaxOptimization 4. recapture tax (no double-counting) remaining capital gain = totalGain - recaptured = $100,000 exactly, taxed at 25%
+  [passed] calculateTaxOptimization 4. recapture tax (no double-counting) depreciationRecaptureTax = recaptured × 35% ≈ $20,363.64
+  [passed] calculateTaxOptimization 4. recapture tax (no double-counting) totalTaxLiability = capitalGainsTax + depreciationRecaptureTax ≈ $45,363.64 (~$45,364)
+  [passed] calculateTaxOptimization 4. recapture tax (no double-counting) no double-counting: capitalGainsTax + depreciationRecaptureTax never exceeds capitalGain × the higher of the two rates
+  [passed] calculateTaxOptimization 5. land only (zero depreciation) annualDepreciation and totalDepreciationOverHold are 0
+  [passed] calculateTaxOptimization 5. land only (zero depreciation) no tax savings from depreciation
+  [passed] calculateTaxOptimization 5. land only (zero depreciation) no depreciation recapture (nothing was ever depreciated)
+  [passed] calculateTaxOptimization 5. land only (zero depreciation) is1031Eligible is true (US, regardless of property type)
+  [passed] calculateTaxOptimization 5. land only (zero depreciation) breakdown string (summary) shows $0.00/year in depreciation savings
+  [passed] calculateTaxOptimization 6. after-tax IRR afterTaxIRR < preTaxIRR (tax reduces the return)
+  [passed] calculateTaxOptimization 6. after-tax IRR the formula subtracts totalTaxLiability only at exit, not from every year's cash flow
+  [passed] calculateTaxOptimization 7. pre-tax vs after-tax comparison depreciation's annual tax savings are real, but don't fully offset the recapture tax due at exit
+  [passed] calculateTaxOptimization 7. pre-tax vs after-tax comparison the IRR gap between pre-tax and after-tax quantifies that net impact
+  [passed] calculateTaxOptimization 7. pre-tax vs after-tax comparison breakdown string (summary) is internally consistent with the typed result fields
+--- tests/brrrr.test.ts ---
+  [passed] calculateBRRRR 1. happy path (real forced appreciation): cashReturnMultiple > 1.0, monthly CF positive
+  [passed] calculateBRRRR 2. break-even (no forced appreciation): cashReturnMultiple in 0.3-0.5, monthly CF negative
+  [passed] calculateBRRRR 3. positive cash flow (good rent): monthlyPositiveCashFlow positive after refinance
+  [passed] calculateBRRRR 4. constrained refinance (low ARV): cashReturnMultiple < 1.0, limited proceeds
+  [passed] calculateBRRRR 5. max leverage (0% down): cashReturnMultiple > 1.0 — and higher than the 20%-down happy-path case at the same ARV
+  [passed] calculateBRRRR cashReturnMultiple formula verification equals cashReturnedToInvestor / totalCashInvested exactly
+  [passed] calculateBRRRR cashReturnMultiple formula verification cashReturnedToInvestor equals refinanceLoanProceeds minus 1.5% refinance closing costs
+  [passed] calculateBRRRR cashReturnMultiple formula verification refinanceLoanProceeds equals refinanceLoanAmount minus the original loan's remaining balance at the refinance date
+  [passed] calculateBRRRR cashReturnMultiple formula verification refinanceLoanAmount respects a custom refinanceLTVPercent (defaults to 0.75)
+  [passed] calculateBRRRR monthly cash flow calculation monthlyPositiveCashFlow equals (70% of gross rent as NOI, /12) minus newMonthlyPayment
+  [passed] calculateBRRRR monthly cash flow calculation capRate equals annual NOI (70% of gross rent) divided by afterRepairValue
+  [passed] calculateBRRRR monthly cash flow calculation monthlyRent echoes the input's newMonthlyRent unchanged
+  [passed] calculateBRRRR summary string includes total cash invested, cash returned, and monthly cash flow
+--- tests/cmhc.test.ts ---
+  [passed] calculateCMHCPremium applies the 4.00% premium for the 90.01-95% LTV band
+  [passed] calculateCMHCPremium applies the 3.10% premium for the 85.01-90% LTV band
+  [passed] calculateCMHCPremium applies the 2.80% premium for the 80.01-85% LTV band
+  [passed] calculateCMHCPremium adds the 0.20% surcharge for amortization beyond 25 years
+  [passed] calculateCMHCPremium throws for LTV outside the insurable 80-95% range
+--- tests/refinance.test.ts ---
+  [passed] calculateRefinance rate drop scenario (4.54% → 3.5%, same 25yr): saves ~$225/month, break-even ~26 months, shouldRefinance: true
+  [passed] calculateRefinance rate drop + longer amortization (25yr → 30yr): bigger payment drop, faster break-even, shouldRefinance: true
+  [passed] calculateRefinance rate increase (don't refinance): breakEvenMonth/breakEvenYears are Infinity, shouldRefinance: false
+  [passed] calculateRefinance break-even boundary (strict <, around a 5-year / 60-month hold) break-even just OVER the hold period (61 months vs. a 60-month hold) → not recommended
+  [passed] calculateRefinance break-even boundary (strict <, around a 5-year / 60-month hold) break-even just UNDER the hold period (59 months vs. a 60-month hold) → recommended
+  [passed] calculateRefinance high refinancing costs (3% vs 1.5%): break-even doubles (linear scaling)
+  [passed] calculateRefinance short hold period (1 year): shouldRefinance: false (refi costs not recouped)
+  [passed] calculateRefinance US property (monthly compounding) calculations use calculateMonthlyUSMortgagePayment (monthly compounding), not the Canadian semi-annual function
+  [passed] calculateRefinance US property (monthly compounding) produces a sensible refinance recommendation for the US scenario
+  [passed] calculateRefinance summary string recommended case includes the monthly savings, break-even months, and 'Recommended'
+  [passed] calculateRefinance summary string rate-increase case explicitly says the payment doesn't go down
+  [passed] calculateRefinance summary string short-hold case explains break-even exceeds the hold period
+  [passed] calculateRefinance summary string includes the NOI-based cash flow context in every case
+--- tests/capitalstack.test.ts ---
+  [passed] calculateCapitalStack computes interest cost, total debt service, and blended cost of capital for a two-tranche deal
+  [passed] calculateCapitalStack computes interest cost, total debt service, and blended cost of capital for a three-tranche deal
+  [passed] calculateCapitalStack wacc is null when no taxRate is supplied, while weightedAverageCost is still computed
+  [passed] calculateCapitalStack applies the (1 - Tc) interest tax shield to debt tranches only, for a true WACC (two-tranche deal)
+  [passed] calculateCapitalStack applies the tax shield to every debt tranche (senior + mezzanine), not just senior debt (three-tranche deal)
+  [passed] calculateCapitalStack at a 0% tax rate, wacc converges exactly to weightedAverageCost (no shield benefit)
+  [passed] calculateCapitalStack an all-equity stack is unaffected by taxRate, since equity gets no tax shield
+--- tests/exit.test.ts ---
+  [passed] calculateSalePrice (standalone) flat_growth: back-solved appreciation rate reproduces the Design-confirmed $1,095,500 sale price
+  [passed] calculateSalePrice (standalone) cap_rate: finalYearNOI / exitCapRate, hand-derived independent case
+  [passed] calculateExitProceeds — flat growth method (Design-confirmed case) salePrice matches the Design-confirmed $1,095,500 figure
+  [passed] calculateExitProceeds — flat growth method (Design-confirmed case) sellingCosts matches the Design-confirmed $76,685 figure exactly (1,095,500 * 0.07)
+  [passed] calculateExitProceeds — flat growth method (Design-confirmed case) remainingLoanBalance matches the Design/E8-confirmed $622,781 figure (±$1)
+  [passed] calculateExitProceeds — flat growth method (Design-confirmed case) remainingLoanBalance exactly equals calling amortizationSchedule() directly with the same loan and month count — not a second, drift-able computation
+  [passed] calculateExitProceeds — flat growth method (Design-confirmed case) netSaleProceeds is $396,033.73, not the task brief's looser ~$396,000 estimate — flagged discrepancy, not silently reconciled
+  [passed] calculateExitProceeds — flat growth method (Design-confirmed case) fullCycleIRR matches a direct call to buildInvestmentCashFlowSeries()+calculateIRR() with the same inputs — proving the wiring, not a second IRR implementation
+  [passed] calculateExitProceeds — cap rate method (independent hand-derived case) pulls finalYearNOI from the projection's last row rather than recomputing it (salePrice = 85,010.71794 / 0.05)
+  [passed] calculateExitProceeds — cap rate method (independent hand-derived case) sellingCosts = salePrice * 0.07, hand-derived (1,700,214.3588 * 0.07 = 119,015.0051)
+  [passed] calculateExitProceeds — cap rate method (independent hand-derived case) netSaleProceeds hand-derived (1,700,214.3588 - 119,015.0051 - 622,781.2656 = 958,418.088)
+  [passed] calculateExitProceeds — cap rate method (independent hand-derived case) remainingLoanBalance exactly equals calling amortizationSchedule() directly, same as the flat-growth case
+--- tests/mortgage.test.ts ---
+  [passed] calculateMonthlyMortgagePayment matches the FCAC-validated figure for the $550,000 / 27.5% down / 4.54% / 25yr case
+  [passed] calculateMonthlyUSMortgagePayment matches the standard reference figure for a $100,000 / 0% down / 6% / 30yr loan
+--- tests/appreciation.test.ts ---
+  [passed] calculateAppreciation Template v2 golden case: $550K, 3% annual, 5-year hold → projectedSalePrice ≈ $637,601, totalAppreciation ≈ $87,601
+  [passed] calculateAppreciation zero appreciation (flat market): $550K, 0%, 5 years → projectedSalePrice = purchasePrice
+  [passed] calculateAppreciation high appreciation (5% annual), 5 years → projectedSalePrice ≈ $701,955
+  [passed] calculateAppreciation long hold (10 years at 4%) → projectedSalePrice ≈ $814,134
+  [passed] calculateAppreciation projected equity: $550K, 3%, 5 years, remainingLoanBalance=$350K → projectedEquity ≈ $287,601
+  [passed] calculateAppreciation projected equity moves 1:1 with a lower remaining loan balance (more paid down → more equity)
+  [passed] calculateAppreciation breakdown string includes the appreciation rate, hold period, purchase price, and projected sale price
+  [passed] calculateAppreciation breakdown string includes the remaining loan balance and the resulting projected equity
+  [passed] calculateAppreciation breakdown string includes the equity gain relative to initialEquity
+  [passed] calculateAppreciation breakdown string uses singular 'year' for a 1-year hold instead of '1 years'
