@@ -1,4 +1,4 @@
-import type { PortfolioRollup } from "../../../src/portfolio";
+import type { PortfolioRollup } from "../../../src/types";
 
 /**
  * Shape of one row from the query in query.ts: properties owned by the

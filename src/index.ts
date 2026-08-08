@@ -1,5 +1,5 @@
 // InvestScape Calculation Engine - Complete Public API
-// All 27 engines (E1-E28) + supporting types
+// All 27 engines (E1-E27) + supporting types
 
 // ============================================================================
 // E1-E5: Core Engines (Mortgage, Amortization, Cash Flow, Exit, Returns)
@@ -10,194 +10,93 @@ export {
   calculateMonthlyUSMortgagePayment,
   semiAnnualToMonthlyRate,
   monthlyCompoundingRate,
-  type MortgageInput,
-} from "./mortgage";
+} from "./E1-mortgage";
 
 export {
   amortizationSchedule,
   remainingBalance,
   trancheAmortizationSchedule,
-  type MortgageCountry,
-  type AmortizationRow,
-  type AmortizingTranche,
-  type TrancheAmortizationRow,
-} from "./amortization";
+} from "./E2-amortization";
 
-export {
-  projectCashFlows,
-  type FlatDebtServiceInput,
-  type RealDebtServiceInput,
-  type CashFlowProjectionInput,
-  type YearlyCashFlow,
-} from "./cashflow";
+export { projectCashFlows } from "./E3-cashflow";
 
-export {
-  calculateSalePrice,
-  calculateExitProceeds,
-  type SalePriceInput,
-  type ExitProceedsInput,
-  type ExitProceedsResult,
-} from "./exit";
+export { calculateSalePrice, calculateExitProceeds } from "./E4-exit";
 
 export {
   calculateIRR,
   calculateMIRR,
   calculateEquityMultiple,
   buildInvestmentCashFlowSeries,
-} from "./returns";
+} from "./E5-returns";
 
 // ============================================================================
-// E6-E11: Qualifying & Portfolio (GDS/TDS, CMHC, Capital Stack, DSCR, Portfolio)
+// E6-E10: Qualifying & Portfolio (GDS/TDS, CMHC, Capital Stack, DSCR, Portfolio)
 // ============================================================================
 
-export {
-  qualifyForMortgage,
-  calculateStressTestRate,
-  type StressTestQualifyingInput,
-  type StressTestQualifyingResult,
-} from "./qualifying";
+export { qualifyForMortgage, calculateStressTestRate } from "./E6-qualifying";
 
-export {
-  calculateCMHCPremium,
-  type CMHCPremiumInput,
-} from "./cmhc";
+export { calculateCMHCPremium } from "./E7-cmhc";
 
-export {
-  calculateCapitalStack,
-  type Tranche,
-  type TrancheType,
-  type TrancheResult,
-  type CapitalStackResult,
-} from "./capitalstack";
+export { calculateCapitalStack } from "./E8-capitalstack";
 
-export {
-  calculateNOI,
-  calculateDSCR,
-  evaluateDSCR,
-  type NOIInput,
-  type DSCRInput,
-  type DSCREvaluationInput,
-  type DSCREvaluationResult,
-} from "./dscr";
+export { calculateNOI, calculateDSCR, evaluateDSCR } from "./E9-dscr";
 
-export {
-  rollupPortfolio,
-  type PropertyPosition,
-  type PortfolioRollup,
-} from "./portfolio";
+export { rollupPortfolio, poolPortfolioCashFlows } from "./E10-portfolio";
 
 // ============================================================================
-// E12-E24: Advanced Engines (PTT, Break-Even, Appreciation, Refinance, etc.)
+// E11-E21: Advanced Engines (PTT, Break-Even, Appreciation, Refinance, etc.)
 // ============================================================================
 
-export {
-  calculateBCPTT,
-  calculateUSPTT,
-  calculatePTT,
-  type PTTInput,
-  type PTTResult,
-} from "./ptt";
+export { calculateBCPTT, calculateUSPTT, calculatePTT } from "./E11-ptt";
 
-export {
-  calculateBreakEven,
-  type BreakEvenInput,
-  type BreakEvenResult,
-} from "./break-even";
+export { calculateBreakEven } from "./E12-break-even";
 
-export {
-  calculateAppreciation,
-  type AppreciationInput,
-  type AppreciationResult,
-} from "./appreciation";
+export { calculateAppreciation } from "./E13-appreciation";
 
-export {
-  calculateRefinance,
-  type RefinanceInput,
-  type RefinanceResult,
-} from "./refinance";
+export { calculateRefinance } from "./E14-refinance";
 
-export {
-  calculateScenarioComparison,
-  type ScenarioInput,
-  type ScenarioComparisonResult,
-} from "./scenario";
+export { calculateScenarioComparison } from "./E15-scenario";
 
-export {
-  calculateBRRRR,
-  type BRRRRInput,
-  type BRRRRResult,
-} from "./brrrr";
+export { calculateBRRRR } from "./E16-brrrr";
 
-export {
-  calculateHoldingPeriodSensitivity,
-  type HoldingPeriodSensitivityInput,
-  type HoldingPeriodSensitivityResult,
-} from "./holding-period-sensitivity";
+export { calculateHoldingPeriodSensitivity } from "./E17-holding-period-sensitivity";
 
-export {
-  calculateTaxOptimization,
-  type TaxOptimizationInput,
-  type TaxOptimizationResult,
-} from "./tax-optimization";
+export { calculateTaxOptimization } from "./E18-tax-optimization";
 
-export {
-  calculateDataProvenance,
-  type DataProvenanceInput,
-  type DataProvenanceResult,
-} from "./data-provenance";
+export { calculateDataProvenance } from "./E19-data-provenance";
 
-export {
-  calculateFXConversion,
-  type FXConversionInput,
-  type FXConversionResult,
-} from "./fx-conversion";
+export { calculateFXConversion } from "./E20-fx-conversion";
 
-export {
-  calculateRentalWaterfall,
-  type RentalWaterfallInput,
-  type RentalWaterfallResult,
-} from "./rental-waterfall";
+export { calculateRentalWaterfall } from "./E21-rental-waterfall";
 
 // ============================================================================
-// E25-E28: Final Engines (Property Tax, OpEx, Insurance, Lender Scorecard)
+// E22-E25: Final Engines (Property Tax, OpEx, Insurance, Lender Scorecard)
 // ============================================================================
 
-export {
-  calculatePropertyTax,
-  type PropertyTaxInput,
-  type PropertyTaxResult,
-} from "./property-tax";
+export { calculatePropertyTax } from "./E22-property-tax";
 
-export {
-  calculateOpExBenchmark,
-  type OpExBenchmarkInput,
-  type OpExBenchmarkResult,
-} from "./opex-benchmark";
+export { calculateOpExBenchmark } from "./E23-opex-benchmark";
 
-export {
-  calculateInsuranceEstimation,
-  type InsuranceEstimationInput,
-  type InsuranceEstimationResult,
-} from "./insurance-estimation";
+export { calculateInsuranceEstimation } from "./E24-insurance-estimation";
 
-export {
-  calculateLenderScorecard,
-  type LenderScorecardInput,
-  type LenderScorecardResult,
-} from "./lender-scorecard";
+export { calculateLenderScorecard } from "./E25-lender-scorecard";
 
 // ============================================================================
-// UI Helpers (Display & Chart Data)
+// E26-E27: UI Helpers (Display & Chart Data)
 // ============================================================================
 
-export {
-  generateAmortizationDisplay,
-  type AmortizationDisplayInput,
-  type AmortizationDisplayResult,
-} from "./amortization-display";
+export { generateAmortizationDisplay } from "./E26-amortization-display";
 
-export {
-  generateChartData,
-  type ChartDataInput,
-  type ChartData,
-} from "./chart-data";
+export { generateChartData } from "./E27-chart-data";
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export * from "./types";
+
+// ============================================================================
+// Utils
+// ============================================================================
+
+export * from "./utils";

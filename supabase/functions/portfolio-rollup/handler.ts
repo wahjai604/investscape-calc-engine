@@ -1,4 +1,5 @@
-import { rollupPortfolio, PropertyPosition } from "../../../src/portfolio";
+import { rollupPortfolio } from "../../../src/E10-portfolio";
+import { PropertyPosition } from "../../../src/types";
 import {
   OwnedPropertyRow,
   MissingAssumption,

@@ -15,7 +15,7 @@
     "dist"
   ],
   "directories": {
-    "test": "tests"
+    "test": "__tests__"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
