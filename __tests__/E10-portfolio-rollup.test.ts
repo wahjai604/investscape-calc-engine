@@ -1,3 +1,11 @@
+/**
+ * InvestScape™ Test Suite
+ * © 2026 Lighthouse Research Ltd. All rights reserved.
+ *
+ * Test methodology and validation data are proprietary.
+ * See LICENSE for usage restrictions.
+ */
+
 import { projectCashFlows } from "../src/E3-cashflow";
 import { buildInvestmentCashFlowSeries } from "../src/E5-returns";
 import { rollupPortfolio } from "../src/E10-portfolio";

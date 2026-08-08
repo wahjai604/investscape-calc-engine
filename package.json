@@ -29,11 +29,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "PROPRIETARY",
+  "licenseText": "© 2026 Lighthouse Research Ltd. Proprietary software. See LICENSE file.",
   "type": "commonjs",
-  "dependencies": {
-    "@formulajs/formulajs": "^4.6.1"
-  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^26.1.2",

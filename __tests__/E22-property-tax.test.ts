@@ -1,3 +1,11 @@
+/**
+ * InvestScape™ Test Suite
+ * © 2026 Lighthouse Research Ltd. All rights reserved.
+ *
+ * Test methodology and validation data are proprietary.
+ * See LICENSE for usage restrictions.
+ */
+
 import { calculatePropertyTax } from "../src/E22-property-tax";
 import { PropertyTaxInput } from "../src/types";
 

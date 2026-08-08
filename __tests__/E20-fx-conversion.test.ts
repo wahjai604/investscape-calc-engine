@@ -1,3 +1,11 @@
+/**
+ * InvestScape™ Test Suite
+ * © 2026 Lighthouse Research Ltd. All rights reserved.
+ *
+ * Test methodology and validation data are proprietary.
+ * See LICENSE for usage restrictions.
+ */
+
 import { calculateFXConversion } from "../src/E20-fx-conversion";
 import { FXConversionInput, DealMetrics } from "../src/types";
 import { calculateIRR } from "../src/E5-returns";

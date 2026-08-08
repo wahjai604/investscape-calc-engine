@@ -1,3 +1,11 @@
+/**
+ * InvestScape™ Test Suite
+ * © 2026 Lighthouse Research Ltd. All rights reserved.
+ *
+ * Test methodology and validation data are proprietary.
+ * See LICENSE for usage restrictions.
+ */
+
 import { calculateHoldingPeriodSensitivity } from "../src/E17-holding-period-sensitivity";
 import { HoldingPeriodSensitivityInput, DealParameters } from "../src/types";
 
