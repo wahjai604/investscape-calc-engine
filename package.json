@@ -21,7 +21,7 @@
   },
   "scripts": {
     "build": "npm run build:clean && npm run build:esm && npm run build:umd",
-    "build:esm": "tsc --project tsconfig.esm.json && node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'}, null, 2))\"",
+    "build:esm": "tsc --project tsconfig.esm.json && node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'}, null, 2))\" && node scripts/fix-esm-extensions.mjs",
     "build:umd": "webpack --config webpack.config.js --mode production",
     "build:clean": "rimraf dist/",
     "test": "jest",
