@@ -1,168 +1,63 @@
 # InvestScape Calculation Engine
 
-## 🔒 Licensing & Intellectual Property
+**Repository:** https://github.com/wahjai604/investscape-calc-engine
+**License:** Proprietary (Closed-Source) — see [LICENSE](LICENSE)
+**Copyright:** © 2026 Lighthouse Research Ltd.
 
-**InvestScape™ Calculation & Economic Engines (E1–E45)** is proprietary software © 2026 Lighthouse Research Ltd.  
-**InvestScape™** is a registered trademark of Lighthouse Research Ltd.
+## Purpose
 
-### License Summary
+A TypeScript calculation engine for real estate investment analysis: mortgage math, cash flow, investment returns, and related property-analysis engines.
 
-| Use Case | Status | License | Fee |
-|----------|--------|---------|-----|
-| **Personal real estate analysis** | ✅ Allowed | Proprietary License | None |
-| **Educational/learning** | ✅ Allowed | Proprietary License | None |
-| **Internal business analysis** | ✅ Allowed | Proprietary License | None |
-| **Commercial product embedding** | ❌ Prohibited | Requires Commercial License | Case-by-case negotiation |
-| **SaaS/service offering** | ❌ Prohibited | Requires Commercial License | Case-by-case negotiation |
-| **Redistribution/resale** | ❌ Prohibited | Not permitted | N/A |
+## Scope
 
-**For full license terms, see `LICENSE` and `CONTRIBUTING.md`.**
+27 engines, **E1–E27**:
 
-### Commercial Licensing
+| Range | Engines |
+|---|---|
+| E1–E5 | Mortgage calculation, amortization schedules, cash flow modeling, exit analysis, investment returns (IRR, MIRR) |
+| E6–E11 | Mortgage qualification (GDS/TDS), CMHC insurance premiums, capital stack (WACC), DSCR, portfolio rollup, BC property transfer tax |
+| E12–E21 | Break-even analysis, appreciation forecasting, refinance recommendations, scenario comparison, BRRRR strategy, holding-period sensitivity, tax optimization, data provenance, FX conversion (CAD/USD), rental waterfall |
+| E22–E27 | Property tax (BC/ON/AB), operating expense benchmarks, insurance estimation, lender scorecard, amortization display, chart data |
 
-If your organization wishes to use InvestScape™ Calculation Engines in a commercial product or service:
+Full function-level detail: `src/index.ts` and `src/E*.ts`.
 
-1. **Contact:** wahjai604@gmail.com
-2. **Subject line:** `[COMMERCIAL LICENSE INQUIRY] — [Your Organization Name]`
-3. **Include:**
-   - Organization name and industry
-   - Intended commercial use
-   - Target customer base
-   - Estimated revenue/impact
-   - Timeline for implementation
+**Jurisdictions implemented:** Canada and US at the country level (`"Canada" | "US"`). Canadian province-specific tax rates are hardcoded for **BC, ON, and AB only**. US states are free-text fields, not a validated enum — no state-specific rules are currently implemented. BC Property Transfer Tax (E11) is BC-specific; other provinces return null.
 
-**Note:** Commercial licensing is evaluated **case-by-case.** No standard pricing. Substantial business justification required.
+## Testing
 
-### Trademark Use
+- **Test suites:** 26
+- **Test cases:** 408
+- **Passing:** 408/408 (100%)
+- **Coverage** (via `npx jest --coverage`): 97.97% statements, 93.25% branches, 98.74% functions, 98.84% lines. No coverage threshold is currently enforced in `jest.config.js`.
+- **Note:** E26 (amortization display) and E27 (chart data) do not have dedicated unit test files; their coverage numbers above come from incidental exercise via other tests, not direct unit tests.
 
-The name **InvestScape™** and associated trademark symbols (™, ®) are protected intellectual property. You may:
-- ✅ Refer to "InvestScape™" when describing the software in non-commercial contexts
-- ✅ Use the trademark when attributing calculation results (e.g., "Powered by InvestScape™")
-
-You may NOT:
-- ❌ Use the InvestScape™ name or logo to suggest endorsement or partnership
-- ❌ Register similar domains or social media accounts using "InvestScape"
-- ❌ Use the trademark in a commercial product without permission
-
----
-
-A production-grade TypeScript financial calculation engine for real estate investment analysis. Built with 27 specialized engines covering mortgage analysis, investment returns, property tax, and advanced real estate strategies.
-
-**Status:** ? Phase 1.5 Complete | 408/408 Tests Passing | Production-Ready
-
-## ?? What This Is
-
-InvestScape is the **calculation backbone** for professional real estate investment analysis.
-
-- **Mortgage Analysis:** Canada (semi-annual) & US (monthly) compounding
-- **Investment Returns:** IRR, MIRR, equity multiples
-- **Deal Analysis:** Cash flow projections, exit analysis, break-even
-- **Advanced Strategies:** BRRRR, refinance recommendations, tax optimization
-- **Portfolio Management:** Multi-property rollup with comprehensive metrics
-- **Market Intelligence:** Property tax, operating expenses, insurance, lender scoring
-
-## ?? Installation
-
-\\\ash
-npm install investscape-calc-engine
-\\\
-
-## ?? Quick Start
-
-\\\	ypescript
-import {
-  calculateMonthlyMortgagePayment,
-  calculateDSCR,
-  rollupPortfolio,
-} from 'investscape-calc-engine';
-
-// Calculate mortgage payment (Canada)
-const payment = calculateMonthlyMortgagePayment({
-  principal: 500000,
-  rate: 0.05,
-  years: 25,
-  country: 'CA'
-});
-\\\
-
-## ?? Engine Inventory
-
-### E1-E5: Core Engines
-- E1: Mortgage calculation
-- E2: Amortization schedules
-- E3: Cash flow modeling
-- E4: Exit analysis
-- E5: Investment returns (IRR, MIRR)
-
-### E6-E11: Qualifying & Portfolio
-- E6: Mortgage qualification (GDS/TDS)
-- E7: CMHC insurance premiums
-- E8: Capital stack (WACC)
-- E9: Debt service coverage ratio (DSCR)
-- E10-E11: Portfolio rollup
-
-### E12-E24: Advanced Engines
-- E12: Property tax (BC, WA, US)
-- E13: Break-even analysis
-- E14: Appreciation forecasting
-- E15: Refinance recommendations
-- E16: Scenario comparison
-- E17: BRRRR strategy
-- E18: Holding period sensitivity
-- E19: Tax optimization
-- E20: Data provenance
-- E21: FX conversion (CAD/USD)
-- E22: Rental waterfall
-
-### E25-E28: Market Intelligence
-- E25: Property tax estimation
-- E26: Operating expense benchmarks
-- E27: Insurance estimation
-- E28: Lender scorecard
-
-## ?? Testing
-
-\\\ash
+```bash
 npm test
-\\\
+```
 
-**Results:**
-- ? 408 tests passing
-- ? 26 test suites
-- ? 100% success rate
-- ? Zero critical bugs
+## Installation
 
-## ?? Documentation
+For authorized users only. Usage requires a valid InvestScape tier (S1–S3).
 
-- Formula Specifications: See 01-Formula-Engine-Specification.md
-- Database Schema: See 02-Database-Schema-Supabase.md
-- Multi-Jurisdiction Rules: See 15-Currency-Multi-Jurisdiction-Schema.md
+```bash
+npm install
+npm test
+```
 
-## ?? Validation Standards
+## Architecture
 
-- ? FCAC-Validated: Mortgage math meets federal standards
-- ? OSFI-Compliant: Stress testing per OSFI guidelines
-- ? Tax-Accurate: Multi-jurisdiction tax rules implemented
-- ? Industry-Standard: Calculations match professional tools
+Each engine lives in its own `src/E{n}-{name}.ts` file with a matching `src/types/E{n}.types.ts` type definitions file. All engines are re-exported from `src/index.ts`. Shared constants live in `src/utils/constants.ts`.
 
-## ?? Performance
+## Documentation
 
-- Mortgage Calculation: < 1ms
-- Amortization Schedule (300 rows): < 5ms
-- Cash Flow Projection (10 years): < 3ms
-- Portfolio Rollup (100 properties): < 20ms
+Reference documentation: https://github.com/wahjai604/investscape-docs
 
-## ?? Phase 2: WeWeb + Supabase Integration
+## License & Disclaimer
 
-The calculation engine is production-ready. Phase 2 will add:
-- WeWeb frontend (forms, dashboards, visualizations)
-- Supabase backend (authentication, database, API)
-- Real-time portfolio management
-- Multi-user collaboration
+This software is closed-source proprietary code. Authorized users only.
 
-**Launch Target:** October 2026
+For legal disclaimers, see [DISCLAIMER.md](DISCLAIMER.md).
 
 ---
 
-**Built with ?? for real estate professionals**  
-**Phase 1.5 Complete | August 5, 2026**
+© 2026 Lighthouse Research Ltd. All rights reserved.
