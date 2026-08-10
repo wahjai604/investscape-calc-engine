@@ -19,7 +19,7 @@
 import { remainingBalance } from "./E2-amortization";
 import { projectCashFlows } from "./E3-cashflow";
 import { calculateAppreciation } from "./E13-appreciation";
-import { calculateSalePrice } from "./E4-exit";
+import { calculateSalePrice } from "./E28-Sales-Appreciation";
 import { buildInvestmentCashFlowSeries, calculateIRR } from "./E5-returns";
 import {
   MortgageInput,
@@ -41,8 +41,8 @@ function loanFor(deal: DealParameters): MortgageInput {
 
 /**
  * Runs one scenario's cash flow projection (cashflow.ts), exit sale price
- * (appreciation.ts for flat growth, or exit.ts's calculateSalePrice for the
- * cap-rate method), remaining loan balance (amortization.ts), and
+ * (appreciation.ts for flat growth, or E28-Sales-Appreciation.ts's
+ * calculateSalePrice for the cap-rate method), remaining loan balance (amortization.ts), and
  * full-cycle IRR (returns.ts) against the shared baseDeal.
  */
 function runScenario(

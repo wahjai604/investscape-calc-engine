@@ -16,21 +16,15 @@
  * Use at your own risk.
  */
 
+import { calculateSalePrice } from "./E28-Sales-Appreciation";
 import { remainingBalance } from "./E2-amortization";
 import { buildInvestmentCashFlowSeries, calculateIRR } from "./E5-returns";
-import { SalePriceInput, ExitProceedsInput, ExitProceedsResult } from "./types";
-
-export function calculateSalePrice(input: SalePriceInput): number {
-  if (input.method === "flat_growth") {
-    return input.originalPurchasePrice * Math.pow(1 + input.appreciationRate, input.holdPeriodYears);
-  }
-  return input.finalYearNOI / input.exitCapRate;
-}
+import { ExitProceedsInput, ExitProceedsResult } from "./types";
 
 /**
  * Composes the exit/reversion figure that returns.ts previously took as a
  * raw exitValue input. Every piece is reused, not reimplemented:
- * calculateSalePrice() (this file) for the sale price, remainingBalance()
+ * calculateSalePrice() (E28-Sales-Appreciation.ts) for the sale price, remainingBalance()
  * (amortization.ts, E8) for loan payoff, and buildInvestmentCashFlowSeries()
  * + calculateIRR() (returns.ts) for the full-cycle IRR — the same
  * one-series-one-solve pattern already correct in portfolio.ts. This

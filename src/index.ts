@@ -17,7 +17,7 @@
  */
 
 // InvestScape Calculation Engine - Complete Public API
-// All 27 engines (E1-E27) + supporting types
+// All 28 engines (E1-E28) + supporting types
 
 // ============================================================================
 // E1-E5: Core Engines (Mortgage, Amortization, Cash Flow, Exit, Returns)
@@ -38,7 +38,7 @@ export {
 
 export { projectCashFlows } from "./E3-cashflow";
 
-export { calculateSalePrice, calculateExitProceeds } from "./E4-exit";
+export { calculateExitProceeds } from "./E4-exit";
 
 export {
   calculateIRR,
@@ -106,6 +106,12 @@ export { calculateLenderScorecard } from "./E25-lender-scorecard";
 export { generateAmortizationDisplay } from "./E26-amortization-display";
 
 export { generateChartData } from "./E27-chart-data";
+
+// ============================================================================
+// E28: Sales Price Appreciation
+// ============================================================================
+
+export { calculateSalePrice } from "./E28-Sales-Appreciation";
 
 // ============================================================================
 // Types

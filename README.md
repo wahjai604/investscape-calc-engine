@@ -10,7 +10,7 @@ A TypeScript calculation engine for real estate investment analysis: mortgage ma
 
 ## Scope
 
-27 engines, **E1–E27**:
+28 engines, **E1–E28**:
 
 | Range | Engines |
 |---|---|
@@ -18,6 +18,7 @@ A TypeScript calculation engine for real estate investment analysis: mortgage ma
 | E6–E11 | Mortgage qualification (GDS/TDS), CMHC insurance premiums, capital stack (WACC), DSCR, portfolio rollup, BC property transfer tax |
 | E12–E21 | Break-even analysis, appreciation forecasting, refinance recommendations, scenario comparison, BRRRR strategy, holding-period sensitivity, tax optimization, data provenance, FX conversion (CAD/USD), rental waterfall |
 | E22–E27 | Property tax (BC/ON/AB), operating expense benchmarks, insurance estimation, lender scorecard, amortization display, chart data |
+| E28 | Sales price appreciation (flat growth and cap rate methods) |
 
 Full function-level detail: `src/index.ts` and `src/E*.ts`.
 
@@ -25,9 +26,9 @@ Full function-level detail: `src/index.ts` and `src/E*.ts`.
 
 ## Testing
 
-- **Test suites:** 26
-- **Test cases:** 408
-- **Passing:** 408/408 (100%)
+- **Test suites:** 27
+- **Test cases:** 410
+- **Passing:** 410/410 (100%)
 - **Coverage** (via `npx jest --coverage`): 97.97% statements, 93.25% branches, 98.74% functions, 98.84% lines. No coverage threshold is currently enforced in `jest.config.js`.
 - **Note:** E26 (amortization display) and E27 (chart data) do not have dedicated unit test files; their coverage numbers above come from incidental exercise via other tests, not direct unit tests.
 

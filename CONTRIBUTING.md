@@ -24,7 +24,7 @@ Thank you for your interest in InvestScape™ Calculation Engines!
 InvestScape™ represents **hundreds of hours of research, validation, and development** across three major domains:
 
 1. **Financial Calculations (E1–E11)** — Validated against FCAC stress-test requirements, OSFI guidelines, and CMHC insurance standards
-2. **Advanced Finance & Tax (E12–E27)** — Jurisdiction-specific rules for CRA (Canada) and IRS (US), commercial real estate methodologies, tax optimization algorithms
+2. **Advanced Finance & Tax (E12–E28)** — Jurisdiction-specific rules for CRA (Canada) and IRS (US), commercial real estate methodologies, tax optimization algorithms
 3. **Market Research & Construction (E29–E45)** — Neighborhood composite scoring, construction project management, development budgeting
 
 **This is our competitive moat.** Keeping InvestScape™ proprietary allows us to:

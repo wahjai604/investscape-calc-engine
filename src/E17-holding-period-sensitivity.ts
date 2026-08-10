@@ -19,7 +19,7 @@
 import { remainingBalance } from "./E2-amortization";
 import { projectCashFlows } from "./E3-cashflow";
 import { calculateAppreciation } from "./E13-appreciation";
-import { calculateSalePrice } from "./E4-exit";
+import { calculateSalePrice } from "./E28-Sales-Appreciation";
 import { buildInvestmentCashFlowSeries, calculateIRR } from "./E5-returns";
 import {
   MortgageInput,
@@ -41,8 +41,8 @@ function loanFor(deal: DealParameters): MortgageInput {
 
 /**
  * Runs the deal out to exactly holdYears: cash flow projection (cashflow.ts),
- * exit sale price (appreciation.ts for flat growth, or exit.ts's
- * calculateSalePrice for the cap-rate method), remaining loan balance
+ * exit sale price (appreciation.ts for flat growth, or
+ * E28-Sales-Appreciation.ts's calculateSalePrice for the cap-rate method), remaining loan balance
  * (amortization.ts — naturally clamps to ~$0 once holdYears exceeds the
  * loan's own amortizationYears, so long holds correctly reflect a paid-off
  * property), and full-cycle IRR (returns.ts).

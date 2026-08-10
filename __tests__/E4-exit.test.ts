@@ -9,7 +9,7 @@
 import { projectCashFlows } from "../src/E3-cashflow";
 import { amortizationSchedule } from "../src/E2-amortization";
 import { buildInvestmentCashFlowSeries, calculateIRR } from "../src/E5-returns";
-import { calculateSalePrice, calculateExitProceeds } from "../src/E4-exit";
+import { calculateExitProceeds } from "../src/E4-exit";
 
 // Same $706,000 / 4.79% / 25yr / Canada loan as the E8 (amortization.ts) and
 // E9 (cashflow.ts) golden tests. This is also used as "original purchase
@@ -35,35 +35,6 @@ const projection = projectCashFlows({
   expenseGrowthRate: 0.02,
   loan,
   country,
-});
-
-describe("calculateSalePrice (standalone)", () => {
-  it("flat_growth: back-solved appreciation rate reproduces the Design-confirmed $1,095,500 sale price", () => {
-    // (1,095,500 / 706,000)^(1/5) - 1, computed independently before writing
-    // this test (see conversation) — not read off the function under test.
-    const appreciationRate = 0.09184637403573426;
-
-    const salePrice = calculateSalePrice({
-      method: "flat_growth",
-      originalPurchasePrice: 706000,
-      appreciationRate,
-      holdPeriodYears,
-    });
-
-    expect(salePrice).toBeCloseTo(1095500, 1);
-  });
-
-  it("cap_rate: finalYearNOI / exitCapRate, hand-derived independent case", () => {
-    // 85,010.72 is E9's already-hand-verified year-5 NOI (tests/cashflow.test.ts).
-    // 85,010.72 / 0.05 = 1,700,214.40 by hand.
-    const salePrice = calculateSalePrice({
-      method: "cap_rate",
-      finalYearNOI: 85010.72,
-      exitCapRate: 0.05,
-    });
-
-    expect(salePrice).toBeCloseTo(1700214.4, 2);
-  });
 });
 
 describe("calculateExitProceeds — flat growth method (Design-confirmed case)", () => {
