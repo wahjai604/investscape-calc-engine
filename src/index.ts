@@ -125,6 +125,16 @@ export {
 } from "./E72-gp-catchup";
 
 // ============================================================================
+// Phase 2 scaffolds (typed contracts only — not implemented, not
+// E-numbered; every function below throws immediately when called). See
+// each file's own doc comment for what's actually blocking it.
+// ============================================================================
+
+export * from "./phase2-scaffolds-str";
+
+export * from "./phase2-scaffolds-climate-risk";
+
+// ============================================================================
 // Types
 // ============================================================================
 
