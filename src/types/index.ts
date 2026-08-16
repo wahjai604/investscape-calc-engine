@@ -42,3 +42,5 @@ export * from "./E24-insurance-estimation.types";
 export * from "./E25-lender-scorecard.types";
 export * from "./E26-amortization-display.types";
 export * from "./E27-chart-data.types";
+export * from "./E71-syndication-waterfall.types";
+export * from "./E72-gp-catchup.types";

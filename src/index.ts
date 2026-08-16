@@ -114,6 +114,17 @@ export { generateChartData } from "./E27-chart-data";
 export { calculateSalePrice } from "./E28-Sales-Appreciation";
 
 // ============================================================================
+// E71-E72: Syndication Waterfall (LP/GP Capital Structure)
+// ============================================================================
+
+export { calculateSyndicationWaterfall } from "./E71-syndication-waterfall";
+
+export {
+  calculateGrossedUpCatchUpTarget,
+  calculateGPCatchUpForPeriod,
+} from "./E72-gp-catchup";
+
+// ============================================================================
 // Types
 // ============================================================================
 

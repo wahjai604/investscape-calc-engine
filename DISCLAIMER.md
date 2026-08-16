@@ -18,7 +18,9 @@ This software is provided "as-is" without warranty, express or implied, includin
 - Accuracy or completeness of calculations
 - Non-infringement of third-party rights
 
-Automated test coverage does not exceed 98.84% of lines (see [README.md](README.md) for current test and coverage figures); two engines (E26, E27) do not currently have dedicated unit tests. Users are responsible for independently verifying calculation results before relying on them.
+Automated test coverage does not exceed 98.95% of lines (see [README.md](README.md) for current test and coverage figures); two engines (E26, E27) do not currently have dedicated unit tests. Users are responsible for independently verifying calculation results before relying on them.
+
+**E71–E72 (syndication waterfall) specifically:** the preferred return rate, GP catch-up percentage, and IRR-hurdle tier table are documented industry defaults, not universal or legally required terms — every real syndication negotiates its own operating agreement, and this software does not verify that any deal's actual LP/GP agreement matches what was entered. See `docs/SYNDICATION-WATERFALL-SOURCES.md` for what each default is sourced from and its documented limitations, including a known simplification in how the IRR-hurdle tier is selected when a single distribution would otherwise cross a hurdle boundary mid-period.
 
 ## Limitation of Liability
 

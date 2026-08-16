@@ -16,6 +16,8 @@
  * Use at your own risk.
  */
 
+import type { WaterfallTier } from "../types";
+
 // Shared numeric thresholds, defaults, and rates used by the calculation
 // engines. Values are unchanged from where they previously lived inline in
 // each engine file — this only centralizes them.
@@ -88,3 +90,29 @@ export const RATE_SEARCH_MAX_MULTIPLE = 10;
 // E24: insurance-estimation
 export const DWELLING_SHARE_OF_COMBINED_RATE = 0.85;
 export const LIABILITY_SHARE_OF_COMBINED_RATE = 0.15;
+
+// E71-E72: syndication waterfall (LP/GP capital structure)
+// See docs/SYNDICATION-WATERFALL-SOURCES.md for the full citations behind
+// every value below.
+
+/** Cumulative, COMPOUNDING annual preferred return to LPs before any GP promote. Real 2026 range is 6-9%; 8% is the single most common default. Always overridable per deal — no formula here is universal. */
+export const DEFAULT_PREFERRED_RETURN_RATE = 0.08;
+/** GP's target share of the (preferred + catch-up) pool, applied via E72's grossed-up formula — NOT a flat percentage of the preferred distribution. Falls inside DEFAULT_GP_PROMOTE_RANGE_MIN/MAX. */
+export const DEFAULT_GP_CATCHUP_PERCENT = 0.2;
+/** Typical real-world GP promote range above the first hurdle. Documentation/rationale only — DEFAULT_GP_CATCHUP_PERCENT and DEFAULT_WATERFALL_TIERS' first promote-bearing tier both fall inside this range; it isn't wired into a formula on its own. */
+export const DEFAULT_GP_PROMOTE_RANGE_MIN = 0.15;
+export const DEFAULT_GP_PROMOTE_RANGE_MAX = 0.25;
+/**
+ * v1 default IRR-hurdle tier table for the final profit split. Documented
+ * as a common real-world default — ~85% of real waterfalls use IRR (not
+ * equity multiple) as the hurdle metric — NOT a universal rule; real deals
+ * are individually negotiated. `irrHurdle` is each tier's upper bound
+ * (exclusive); `Infinity` marks the open-ended top tier. Must stay in
+ * ascending `irrHurdle` order.
+ */
+export const DEFAULT_WATERFALL_TIERS: WaterfallTier[] = [
+  { irrHurdle: 0.08, lpSplit: 1.0, gpSplit: 0.0 },
+  { irrHurdle: 0.12, lpSplit: 0.8, gpSplit: 0.2 },
+  { irrHurdle: 0.15, lpSplit: 0.7, gpSplit: 0.3 },
+  { irrHurdle: Infinity, lpSplit: 0.5, gpSplit: 0.5 },
+];
