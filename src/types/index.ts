@@ -44,3 +44,8 @@ export * from "./E26-amortization-display.types";
 export * from "./E27-chart-data.types";
 export * from "./E71-syndication-waterfall.types";
 export * from "./E72-gp-catchup.types";
+export * from "./E73-us-qualifying.types";
+export * from "./E74-fha-mip.types";
+export * from "./E75-conventional-pmi.types";
+export * from "./E76-dscr-loan-sizing.types";
+export * from "./E77-qualifying-rental-income-us.types";

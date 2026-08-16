@@ -125,6 +125,28 @@ export {
 } from "./E72-gp-catchup";
 
 // ============================================================================
+// E73-E77: US Mortgage Qualifying (DTI Tiers, FHA MIP, Conventional PMI,
+// Loan-Convention DSCR, 75% Qualifying Rental Income)
+// ============================================================================
+
+export {
+  calculateUSDTITier,
+  checkConformingLoanLimit,
+  qualifyForUSMortgage,
+} from "./E73-us-qualifying";
+
+export { calculateFHAAnnualMIPRate, calculateFHAMIP } from "./E74-fha-mip";
+
+export { calculatePMIRate, calculateConventionalPMI } from "./E75-conventional-pmi";
+
+export {
+  calculateLoanConventionDSCR,
+  evaluateLoanConventionDSCR,
+} from "./E76-dscr-loan-sizing";
+
+export { calculateQualifyingRentalIncomeUS } from "./E77-qualifying-rental-income-us";
+
+// ============================================================================
 // Phase 2 scaffolds (typed contracts only — not implemented, not
 // E-numbered; every function below throws immediately when called). See
 // each file's own doc comment for what's actually blocking it.

@@ -116,3 +116,96 @@ export const DEFAULT_WATERFALL_TIERS: WaterfallTier[] = [
   { irrHurdle: 0.15, lpSplit: 0.7, gpSplit: 0.3 },
   { irrHurdle: Infinity, lpSplit: 0.5, gpSplit: 0.5 },
 ];
+
+// E73-E77: US mortgage qualifying (DTI stress tiers, conforming loan limit,
+// FHA MIP, conventional PMI, loan-convention DSCR, 75% qualifying-rental-
+// income rule). See docs/US-QUALIFIER-SOURCES.md for the full citations
+// behind every value below.
+
+// --- E73: DTI stress tiers + conforming loan limit ---
+
+/** Manual-underwriting baseline max back-end DTI (Fannie Mae Selling Guide B3-6-02). */
+export const US_DTI_MANUAL_MAX = 0.36;
+/** Manual-underwriting max back-end DTI when a real compensating factor is met (credit score, reserves, or LTV — see US_DTI_COMPENSATING_* below). */
+export const US_DTI_COMPENSATING_MAX = 0.45;
+/** Automated-underwriting (DU/LPA-equivalent "Approve/Eligible") max back-end DTI. */
+export const US_DTI_AUTOMATED_MAX = 0.5;
+
+export const US_DTI_COMPENSATING_MIN_CREDIT_SCORE = 680;
+export const US_DTI_COMPENSATING_MIN_RESERVE_MONTHS = 6;
+export const US_DTI_COMPENSATING_MAX_LTV = 0.75;
+
+/** 2026 FHFA conforming loan limit, standard 1-unit property, most of the country. */
+export const US_CONFORMING_LOAN_LIMIT_STANDARD = 832_750;
+/** 2026 FHFA conforming loan limit, high-cost areas (AK/HI/Guam/USVI and FHFA-designated high-cost counties, capped at 150% of the standard limit). */
+export const US_CONFORMING_LOAN_LIMIT_HIGH_COST = 1_249_125;
+
+// --- E74: FHA MIP ---
+
+export const FHA_UFMIP_RATE = 0.0175;
+/**
+ * Composed directly from the sourced range endpoints (0.55% typical /
+ * 0.50% with >=5% down / up to 0.75% for higher-LTV+larger-loan / as low
+ * as 0.15% for 15yr+substantial down): base annual rate by term and LTV
+ * tier, plus a surcharge added when the loan exceeds the applicable
+ * conforming limit. 0.55% + 0.20% surcharge = 0.75%, the documented
+ * ceiling. See docs/US-QUALIFIER-SOURCES.md for how these compose.
+ */
+export const FHA_ANNUAL_MIP_TIERS = {
+  thirtyYear: {
+    /** Down payment < 5% (LTV > 95%). */
+    highLTVRate: 0.0055,
+    /** Down payment >= 5%. */
+    lowLTVRate: 0.005,
+  },
+  fifteenYear: {
+    /** Down payment < 10% (LTV > 90%). */
+    highLTVRate: 0.004,
+    /** Down payment >= 10% (substantial down payment). */
+    lowLTVRate: 0.0015,
+  },
+  /** Added to the base rate above when loanAmount exceeds the applicable conforming limit. */
+  aboveConformingLimitSurcharge: 0.002,
+} as const;
+
+/** Down-payment threshold (post-2013 FHA rule) below which annual MIP never removes automatically and runs for the life of the loan. */
+export const FHA_MIP_ELEVEN_YEAR_REMOVAL_MIN_DOWN_PAYMENT = 0.1;
+export const FHA_MIP_AUTOMATIC_REMOVAL_YEARS = 11;
+
+// --- E75: Conventional PMI ---
+
+export const PMI_REQUIRED_LTV_THRESHOLD = 0.8;
+export const PMI_RATE_FLOOR = 0.003;
+export const PMI_RATE_CEILING = 0.015;
+
+/** Base annual PMI rate by LTV band, before the credit-score multiplier. maxLTV is inclusive-upper-bound; evaluated in ascending order. */
+export const PMI_LTV_TIERS = [
+  { maxLTV: 0.85, baseRate: 0.005 },
+  { maxLTV: 0.9, baseRate: 0.007 },
+  { maxLTV: 0.95, baseRate: 0.009 },
+  { maxLTV: 0.97, baseRate: 0.012 },
+] as const;
+
+/** Multiplier applied to the LTV-tier base rate. minScore is inclusive; evaluated highest-first (first match wins). */
+export const PMI_CREDIT_SCORE_MULTIPLIERS = [
+  { minScore: 760, multiplier: 0.6 },
+  { minScore: 700, multiplier: 1.0 },
+  { minScore: 680, multiplier: 1.3 },
+  { minScore: 0, multiplier: 1.5 },
+] as const;
+
+// --- E76: Loan-convention DSCR (gross rent / PITIA) ---
+// NOT the same metric as E9's calculateDSCR/evaluateDSCR (NOI / annual
+// debt service, the commercial convention) — see E76's own file header.
+
+/** Admin-overridable default minimum ratio to qualify at all. */
+export const DSCR_LOAN_MIN_RATIO_DEFAULT = 1.0;
+/** Ratio at/above which a loan-convention DSCR loan typically unlocks the lender's best pricing tier — informational, not a qualify/no-qualify gate. */
+export const DSCR_LOAN_STRONG_RATIO_THRESHOLD = 1.25;
+export const DSCR_LOAN_MIN_FICO_DEFAULT = 620;
+export const DSCR_LOAN_MIN_DOWN_PAYMENT_DEFAULT = 0.2;
+
+// --- E77: US qualifying rental income (75% rule) ---
+
+/** Fannie Mae Selling Guide B3-3.8-01: 75% of gross monthly rent counts toward qualifying income when a signed lease exists (lease-based path only — v1 scope). */
+export const RENTAL_INCOME_HAIRCUT = 0.75;
