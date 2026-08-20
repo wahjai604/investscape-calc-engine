@@ -49,6 +49,16 @@ export interface Tranche {
   rate: number;
   /** Required by trancheAmortizationSchedule() for senior_debt/mezzanine facilities that carry a P&I schedule. Omit for equity and presale_deposit, which don't amortize like a loan. */
   amortizationYears?: number;
+  /**
+   * Month (0 = deal start) at which this senior_debt/mezzanine facility
+   * draws its full balance and begins amortizing — e.g. a mezzanine that
+   * draws at month 6 while the senior loan draws at month 0. Defaults to 0
+   * when omitted, matching today's existing day-1-draw behavior (fully
+   * backward compatible). Does NOT apply to presale_deposit, which uses
+   * milestones for its own draw-timing mechanic, or to equity, which has no
+   * schedule at all.
+   */
+  drawMonth?: number;
   /** Required by buildPresaleDepositSchedule() for presale_deposit facilities — the trust release schedule. Not used by other tranche types. */
   milestones?: PresaleMilestone[];
   /** Loan-to-cost — this facility's amount as a share of total project cost. Supplied by the caller (derived from project totals outside this module); echoed through, not recomputed here. */

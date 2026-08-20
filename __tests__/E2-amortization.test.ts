@@ -142,6 +142,42 @@ describe("trancheAmortizationSchedule", () => {
     const noTerm: Tranche = { type: "senior_debt", amount: 100000, rate: 0.05 };
     expect(() => trancheAmortizationSchedule(noTerm)).toThrow(/amortizationYears/);
   });
+
+  describe("drawMonth (delayed-draw facilities, e.g. a mezzanine drawing after the senior loan)", () => {
+    it("drawMonth: 0 produces byte-identical rows to a tranche with no drawMonth field at all — regression guard for today's day-1-draw behavior", () => {
+      const withZero: Tranche = { type: "senior_debt", amount: 706000, rate: 0.0479, amortizationYears: 25, drawMonth: 0 };
+      const omitted: Tranche = { type: "senior_debt", amount: 706000, rate: 0.0479, amortizationYears: 25 };
+
+      expect(trancheAmortizationSchedule(withZero, "monthly")).toEqual(trancheAmortizationSchedule(omitted, "monthly"));
+    });
+
+    it("a delayed-draw mezzanine (drawMonth: 6, 15yr term) sits at $0 through month 6, draws its full balance at month 7, and fully amortizes exactly 180 months after the draw", () => {
+      const mezz: Tranche = { type: "mezzanine", amount: 1500000, rate: 0.12, amortizationYears: 15, drawMonth: 6 };
+      const rows = trancheAmortizationSchedule(mezz, "monthly");
+
+      // Months 1-6: undrawn, everything zero.
+      const preDraw = rows.slice(0, 6);
+      expect(preDraw).toHaveLength(6);
+      for (const row of preDraw) {
+        expect(row.beginningBalance).toBe(0);
+        expect(row.payment).toBe(0);
+        expect(row.principal).toBe(0);
+        expect(row.interest).toBe(0);
+        expect(row.endingBalance).toBe(0);
+      }
+
+      // Month 7 (period = drawMonth + 1): full balance draws and amortization begins.
+      const drawRow = rows.find((row) => row.period === 7)!;
+      expect(drawRow.beginningBalance).toBeCloseTo(1500000, 2);
+
+      // Facility's own 15-year term runs from its own draw date: 6 + 180 = 186 total rows,
+      // last row's period is 186 and it's fully amortized to ~$0.
+      expect(rows).toHaveLength(6 + 15 * 12);
+      const lastRow = rows[rows.length - 1];
+      expect(lastRow.period).toBe(186);
+      expect(lastRow.endingBalance).toBeCloseTo(0, 0);
+    });
+  });
 });
 
 describe("buildPresaleDepositSchedule", () => {

@@ -114,8 +114,14 @@ function monthlyTrancheRows(tranche: Tranche): TrancheAmortizationRow[] {
   const monthlyRate = compoundingRateForTranche(tranche);
   const totalMonths = requireAmortizationYears(tranche) * 12;
   const payment = PMT(monthlyRate, totalMonths, -tranche.amount);
+  const drawMonth = tranche.drawMonth ?? 0;
 
   const rows: TrancheAmortizationRow[] = [];
+
+  for (let month = 1; month <= drawMonth; month++) {
+    rows.push({ period: month, beginningBalance: 0, payment: 0, principal: 0, interest: 0, endingBalance: 0 });
+  }
+
   let balance = tranche.amount;
 
   for (let month = 1; month <= totalMonths; month++) {
@@ -124,7 +130,7 @@ function monthlyTrancheRows(tranche: Tranche): TrancheAmortizationRow[] {
     const principal = payment - interest;
     balance -= principal;
 
-    rows.push({ period: month, beginningBalance, payment, principal, interest, endingBalance: balance });
+    rows.push({ period: drawMonth + month, beginningBalance, payment, principal, interest, endingBalance: balance });
   }
 
   return rows;

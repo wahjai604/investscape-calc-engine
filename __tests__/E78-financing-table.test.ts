@@ -7,6 +7,7 @@
  */
 
 import { calculateFinancingTable } from "../src/E78-financing-table";
+import { trancheAmortizationSchedule } from "../src/E2-amortization";
 import { FinancingFacility } from "../src/types";
 
 // A 3-facility Development Studio deal: 1st mortgage (senior_debt) + 2nd
@@ -144,5 +145,102 @@ describe("calculateFinancingTable", () => {
       expect(row.totalOutstanding).toBeCloseTo(sum, 6);
     }
     expect(result.combinedSeries).toHaveLength(months);
+  });
+});
+
+// A delayed-draw mezzanine: senior draws day 1 (drawMonth omitted/0) and
+// amortizes over 25yr; mezzanine draws at month 6 and amortizes over its own
+// 15yr term from that point; equity has no schedule and is unaffected by
+// drawMonth entirely. Confirms E78's facilityPeriods()/combinedSeries wiring
+// (which indexes trancheAmortizationSchedule()'s rows by rows[period - 1])
+// still lines up correctly once a facility's rows lead with zero-balance
+// pre-draw periods.
+describe("calculateFinancingTable with a delayed-draw (drawMonth) mezzanine", () => {
+  const seniorDrawDay1: FinancingFacility = {
+    id: "senior",
+    type: "senior_debt",
+    amount: 6000000,
+    rate: 0.08,
+    amortizationYears: 25,
+  };
+
+  const delayedMezz: FinancingFacility = {
+    id: "mezz",
+    type: "mezzanine",
+    amount: 1500000,
+    rate: 0.12,
+    amortizationYears: 15,
+    drawMonth: 6,
+  };
+
+  const equity: FinancingFacility = {
+    id: "equity",
+    type: "equity",
+    amount: 2000000,
+    rate: 0,
+  };
+
+  const delayedFacilities = [seniorDrawDay1, delayedMezz, equity];
+  const delayedResult = calculateFinancingTable({ facilities: delayedFacilities, months: 24 });
+
+  it("mezzanine's balancesByFacility sits at $0 for periods 1-6, then steps up to its drawn amount (net of period 7's own paydown) at period 7", () => {
+    const mezzBalances = delayedResult.combinedSeries.map((row) => row.balancesByFacility["mezz"]);
+
+    for (let period = 1; period <= 6; period++) {
+      expect(mezzBalances[period - 1]).toBe(0);
+    }
+
+    // combinedSeries stores each period's *ending* balance, so period 7 is
+    // net of that period's own principal paydown — compare against the
+    // tranche's own schedule rather than the raw draw amount.
+    const mezzRows = trancheAmortizationSchedule(delayedMezz, "monthly");
+    const period7Row = mezzRows.find((row) => row.period === 7)!;
+    expect(period7Row.beginningBalance).toBeCloseTo(1500000, 2);
+    expect(mezzBalances[6]).toBeCloseTo(period7Row.endingBalance, 2);
+  });
+
+  it("equity carries no balance entry in combinedSeries regardless of drawMonth on other facilities", () => {
+    for (const row of delayedResult.combinedSeries) {
+      expect(row.balancesByFacility["equity"]).toBeUndefined();
+    }
+  });
+
+  it("totalOutstanding sums correctly both before (period 5) and after (period 10) the mezzanine's draw", () => {
+    const period5 = delayedResult.combinedSeries.find((r) => r.period === 5)!;
+    const period10 = delayedResult.combinedSeries.find((r) => r.period === 10)!;
+
+    expect(period5.totalOutstanding).toBeCloseTo(period5.balancesByFacility["senior"], 6);
+    expect(period10.totalOutstanding).toBeCloseTo(
+      period10.balancesByFacility["senior"] + period10.balancesByFacility["mezz"],
+      6,
+    );
+  });
+
+  it("a presale_deposit facility run through the same calculateFinancingTable() call is completely unaffected by the drawMonth change (proves that code path wasn't touched)", () => {
+    const presaleAlongsideDelayedMezz: FinancingFacility = {
+      id: "presale",
+      type: "presale_deposit",
+      amount: 1000000,
+      rate: 0.01,
+      milestones: [
+        { month: 1, cumulativeReleasePercent: 0.3 },
+        { month: 7, cumulativeReleasePercent: 0.7 },
+        { month: 13, cumulativeReleasePercent: 1.0 },
+      ],
+    };
+
+    const withMezzResult = calculateFinancingTable({
+      facilities: [presaleAlongsideDelayedMezz, delayedMezz],
+      months: 24,
+    });
+    const withoutMezzResult = calculateFinancingTable({
+      facilities: [presaleAlongsideDelayedMezz],
+      months: 24,
+    });
+
+    const presaleBalancesWith = withMezzResult.combinedSeries.map((row) => row.balancesByFacility["presale"]);
+    const presaleBalancesWithout = withoutMezzResult.combinedSeries.map((row) => row.balancesByFacility["presale"]);
+
+    expect(presaleBalancesWith).toEqual(presaleBalancesWithout);
   });
 });
