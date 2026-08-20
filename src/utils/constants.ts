@@ -209,3 +209,88 @@ export const DSCR_LOAN_MIN_DOWN_PAYMENT_DEFAULT = 0.2;
 
 /** Fannie Mae Selling Guide B3-3.8-01: 75% of gross monthly rent counts toward qualifying income when a signed lease exists (lease-based path only — v1 scope). */
 export const RENTAL_INCOME_HAIRCUT = 0.75;
+
+// --- E79: Deal Grade (Property Detail / Deal Analyzer A/B+/B/B-/C badge) ---
+// Per-metric brackets follow E25-lender-scorecard.ts's stepped 25/15/5/0
+// pattern (full / solid / weak / issue tier) so admin-editing one scoring
+// scheme generalizes to the other. Every threshold below is a documented
+// product decision, not an authoritative industry standard — there is no
+// single agreed-upon cutoff table for combining cap rate / cash-on-cash /
+// DSCR / IRR into one grade, so these were chosen for internal consistency
+// with values this codebase already treats as meaningful (e.g. DSCR's
+// MINIMUM_DSCR = 1.2 above) and common real-estate-investing rules of
+// thumb, then named here so they're admin-editable without touching
+// E79-deal-grade.ts itself.
+
+/** Unlevered yield (NOI / purchasePrice). 8%+ is a strong buy in most markets; 4-6% is roughly average; below 4% trails a risk-free-adjusted bar. */
+export const CAP_RATE_STRONG_THRESHOLD = 0.08;
+export const CAP_RATE_SOLID_THRESHOLD = 0.06;
+export const CAP_RATE_WEAK_THRESHOLD = 0.04;
+
+/** Levered first-year cash yield. 10%+ is the commonly-cited strong-deal target; below 2% (including negative — a cash-flow-negative deal) is a real red flag, not just a weak number. */
+export const CASH_ON_CASH_STRONG_THRESHOLD = 0.1;
+export const CASH_ON_CASH_SOLID_THRESHOLD = 0.06;
+export const CASH_ON_CASH_WEAK_THRESHOLD = 0.02;
+
+/** DSCR brackets for deal-quality grading. Deliberately reuses MINIMUM_DSCR (1.2, the E9/lender-bankability minimum) as this engine's "solid" tier rather than inventing a second number for the same concept; below 1.0 means NOI doesn't even cover debt service. */
+export const DSCR_STRONG_THRESHOLD = 1.5;
+export const DSCR_SOLID_THRESHOLD = MINIMUM_DSCR;
+export const DSCR_WEAK_THRESHOLD = 1.0;
+
+/** Full-cycle IRR. 18%+ is a typical value-add/opportunistic target; 12-18% a solid core-plus target; 8-12% modest (near typical cost of capital); below 8% weak or negative. */
+export const IRR_STRONG_THRESHOLD = 0.18;
+export const IRR_SOLID_THRESHOLD = 0.12;
+export const IRR_WEAK_THRESHOLD = 0.08;
+
+/**
+ * Overall-score (0-100) cutoffs for the A/B+/B/B-/C badge. Deliberately
+ * chosen from the set of sums actually reachable by four stepped
+ * {0,5,15,25} metric scores (85 and 95, for example, are NOT reachable by
+ * any combination of four such scores, so cutoffs land on values that are)
+ * — see E79-deal-grade.test.ts's boundary-case tests for the exact
+ * combinations that hit each cutoff. Reasoning: 80+ needs most metrics in
+ * their top-or-high-mid tier (e.g. two 25s + two 15s); 65+ is solid
+ * overall; 50+ is a coin-flip/average deal; 35+ still has some redeeming
+ * metrics but real weakness; below that, at least two metrics are sitting
+ * in the "issue" tier (5 or 0) — often including a real deal-killer like
+ * negative cash flow or DSCR < 1.0.
+ */
+export const DEAL_GRADE_A_MIN = 80;
+export const DEAL_GRADE_B_PLUS_MIN = 65;
+export const DEAL_GRADE_B_MIN = 50;
+export const DEAL_GRADE_B_MINUS_MIN = 35;
+
+// --- E80: Budget vs. Actuals (Development Studio) ---
+
+/**
+ * A line item's variance (budgetedAmount - actualAmount) counts as
+ * "on_track" when it's within this percentage of the budgeted amount —
+ * draw-timing noise (an invoice landing a few days either side of a
+ * reporting cutoff) shouldn't read as a real over/under signal. 2% is a
+ * common materiality threshold for construction cost-tracking variance
+ * reporting; anything wider is a real deviation worth flagging.
+ */
+export const BUDGET_VARIANCE_ON_TRACK_PERCENT = 0.02;
+/**
+ * Used instead of BUDGET_VARIANCE_ON_TRACK_PERCENT only when
+ * budgetedAmount is 0 (a percentage-of-zero threshold would be 0, meaning
+ * ANY actual spend at all — even $1 — would silently register as "over";
+ * this dollar floor avoids that false-positive on genuinely zero-budgeted
+ * lines).
+ */
+export const BUDGET_VARIANCE_ON_TRACK_ABSOLUTE_FLOOR = 500;
+
+// --- E81: Sources ≡ Uses reconciliation (Development Studio) ---
+
+/**
+ * Sources and uses are computed from independent inputs (facility amounts,
+ * sponsor equity, and four separate uses categories) that can each carry
+ * their own floating-point rounding; exact `===` equality would flag a
+ * deal as "unbalanced" over a fraction-of-a-cent rounding artifact that
+ * isn't a real reconciliation problem. This tolerance is deliberately tiny
+ * (one cent) — it exists only to absorb float noise, not to paper over a
+ * genuine mismatch, which is exactly what `balanced`/`delta`/`issues` on
+ * the result exist to surface instead of silently rounding or forcing the
+ * two sides to match.
+ */
+export const SOURCES_USES_BALANCE_TOLERANCE = 0.01;

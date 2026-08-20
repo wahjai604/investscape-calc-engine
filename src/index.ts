@@ -34,6 +34,7 @@ export {
   amortizationSchedule,
   remainingBalance,
   trancheAmortizationSchedule,
+  buildPresaleDepositSchedule,
 } from "./E2-amortization";
 
 export { projectCashFlows } from "./E3-cashflow";
@@ -57,7 +58,7 @@ export { calculateCMHCPremium } from "./E7-cmhc";
 
 export { calculateCapitalStack } from "./E8-capitalstack";
 
-export { calculateNOI, calculateDSCR, evaluateDSCR } from "./E9-dscr";
+export { calculateNOI, calculateDSCR, evaluateDSCR, calculateCapRate, calculateCashOnCash } from "./E9-dscr";
 
 export { rollupPortfolio, poolPortfolioCashFlows } from "./E10-portfolio";
 
@@ -145,6 +146,37 @@ export {
 } from "./E76-dscr-loan-sizing";
 
 export { calculateQualifyingRentalIncomeUS } from "./E77-qualifying-rental-income-us";
+
+// ============================================================================
+// E78: Multi-Facility Financing Table (Development Studio)
+// ============================================================================
+
+export { calculateFinancingTable } from "./E78-financing-table";
+
+// ============================================================================
+// E79: Deal Grade (Property Detail / Deal Analyzer A/B+/B/B-/C badge)
+// ============================================================================
+
+export { calculateDealGrade } from "./E79-deal-grade";
+
+// ============================================================================
+// E80: Budget vs. Actuals (Development Studio)
+// ============================================================================
+
+export { calculateBudgetRollup, evaluateBudgetLineItem } from "./E80-budget-actuals";
+
+// ============================================================================
+// E81: Sources ≡ Uses Reconciliation (Development Studio)
+// ============================================================================
+
+export { calculateSourcesUses } from "./E81-sources-uses";
+
+// ============================================================================
+// E82: Acquisition Structure (Multi-Parcel Assembly + Asset Purchase vs.
+// Bare Trust) — Development Studio
+// ============================================================================
+
+export { calculateAcquisitionStructure } from "./E82-acquisition-structure";
 
 // ============================================================================
 // Phase 2 scaffolds (typed contracts only — not implemented, not

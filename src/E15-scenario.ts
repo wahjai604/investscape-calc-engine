@@ -21,6 +21,7 @@ import { projectCashFlows } from "./E3-cashflow";
 import { calculateAppreciation } from "./E13-appreciation";
 import { calculateSalePrice } from "./E28-Sales-Appreciation";
 import { buildInvestmentCashFlowSeries, calculateIRR } from "./E5-returns";
+import { calculateCashOnCash } from "./E9-dscr";
 import {
   MortgageInput,
   DealParameters,
@@ -94,7 +95,7 @@ function runScenario(
   const series = buildInvestmentCashFlowSeries(baseDeal.equityInvested, projection, projectedEquity);
   const irr = calculateIRR(series);
 
-  const cashOnCash = projection[0].netCashFlow / baseDeal.equityInvested;
+  const cashOnCash = calculateCashOnCash(projection[0].netCashFlow, baseDeal.equityInvested);
 
   let projectedEquityNetOfSellingCosts: number | null;
   let warning: string;

@@ -47,7 +47,7 @@ export function projectCashFlows(input: CashFlowProjectionInput): YearlyCashFlow
     const grossRent = grossAnnualRent * rentGrowthFactor;
     const operatingExpenses = annualOperatingExpenses * expenseGrowthFactor;
     const vacancyAllowance = grossRent * vacancyRatePercent;
-    const noi = calculateNOI({
+    const { netOperatingIncome: noi } = calculateNOI({
       grossAnnualRent: grossRent,
       vacancyRatePercent,
       annualOperatingExpenses: operatingExpenses,

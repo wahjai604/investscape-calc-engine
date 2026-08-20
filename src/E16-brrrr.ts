@@ -82,7 +82,7 @@ export function calculateBRRRR(input: BRRRRInput): BRRRRResult {
   // vacancyRatePercent: 0 — the 30% "opex" figure here already stands in for
   // the whole simplified expense estimate the spec calls for; a separate
   // vacancy deduction isn't part of that estimate.
-  const annualNOI = calculateNOI({
+  const { netOperatingIncome: annualNOI } = calculateNOI({
     grossAnnualRent: newMonthlyRent * 12,
     vacancyRatePercent: 0,
     annualOperatingExpenses: newMonthlyRent * 12 * OPEX_PERCENT_OF_RENT,

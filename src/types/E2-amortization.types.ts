@@ -16,8 +16,6 @@
  * Use at your own risk.
  */
 
-import { TrancheType } from "./E8-capitalstack.types";
-
 export interface AmortizationRow {
   month: number;
   payment: number;
@@ -26,18 +24,11 @@ export interface AmortizationRow {
   closingBalance: number;
 }
 
-/**
- * capitalstack.ts's Tranche has amount/rate but no amortizationYears (see
- * note above) — this is a local, amortization-specific shape rather than an
- * extension of that interface, since capitalstack.ts's simple
- * amount * rate interestCost model doesn't need a term.
- */
-export interface AmortizingTranche {
-  type: TrancheType;
-  amount: number;
-  annualRate: number;
-  amortizationYears: number;
-}
+// AmortizingTranche (a local amount/annualRate/amortizationYears shape,
+// parallel to capitalstack.ts's Tranche) has been removed. The schema gap
+// this used to paper over — Tranche having no amortizationYears field — is
+// resolved directly on Tranche in E8-capitalstack.types.ts, so
+// trancheAmortizationSchedule() below now takes a Tranche.
 
 export interface TrancheAmortizationRow {
   period: number;
@@ -46,4 +37,23 @@ export interface TrancheAmortizationRow {
   principal: number;
   interest: number;
   endingBalance: number;
+}
+
+/**
+ * One period of a presale_deposit facility's schedule. Unlike
+ * TrancheAmortizationRow, there is no principal component and balances
+ * don't decline period over period — drawnBalance only steps up when a
+ * milestone releases more of the trust, and the facility is retired in one
+ * bullet repayment (repaid: true on the final row), not paid down
+ * gradually.
+ */
+export interface PresaleDepositScheduleRow {
+  period: number;
+  /** Cumulative amount released from trust and outstanding as of this period, per the facility's milestones. */
+  drawnBalance: number;
+  /** Interest-only accrual for this period: drawnBalance * the facility's monthly rate. */
+  interestAccrued: number;
+  cumulativeInterest: number;
+  /** True only on the final row, when the outstanding drawnBalance is retired in a single bullet repayment. */
+  repaid: boolean;
 }

@@ -23,7 +23,14 @@ import {
   semiAnnualToMonthlyRate,
   monthlyCompoundingRate,
 } from "./E1-mortgage";
-import { MortgageInput, MortgageCountry, AmortizationRow, AmortizingTranche, TrancheAmortizationRow } from "./types";
+import {
+  MortgageInput,
+  MortgageCountry,
+  AmortizationRow,
+  Tranche,
+  TrancheAmortizationRow,
+  PresaleDepositScheduleRow,
+} from "./types";
 
 function resolvePaymentAndRate(loan: MortgageInput, country: MortgageCountry): { payment: number; monthlyRate: number } {
   if (country === "Canada") {
@@ -42,10 +49,9 @@ function resolvePaymentAndRate(loan: MortgageInput, country: MortgageCountry): {
 /**
  * Row-by-row amortization for a single loan (one tranche's worth — a
  * caller amortizing a multi-tranche capital stack, per capitalstack.ts,
- * calls this once per tranche and sums the rows itself; Tranche has no
- * term/amortization-years field today, so per-tranche schedules aren't
- * wireable end-to-end yet — that's a capitalstack.ts schema gap, not
- * something to invent here).
+ * calls this once per tranche and sums the rows itself; see
+ * trancheAmortizationSchedule() below for the per-tranche equivalent that
+ * works directly off Tranche's amount/rate/amortizationYears).
  *
  * The payment is never recomputed here — it's taken as-is from mortgage.ts's
  * existing, FCAC-validated payment functions and held constant across every
@@ -91,15 +97,22 @@ export function remainingBalance(loan: MortgageInput, country: MortgageCountry, 
  * for one is a hypothetical, not a real use case — but the convention
  * still has to resolve to something, and monthly is the closer analogue.
  */
-function compoundingRateForTranche(tranche: AmortizingTranche): number {
+function compoundingRateForTranche(tranche: Tranche): number {
   return tranche.type === "senior_debt"
-    ? semiAnnualToMonthlyRate(tranche.annualRate)
-    : monthlyCompoundingRate(tranche.annualRate);
+    ? semiAnnualToMonthlyRate(tranche.rate)
+    : monthlyCompoundingRate(tranche.rate);
 }
 
-function monthlyTrancheRows(tranche: AmortizingTranche): TrancheAmortizationRow[] {
+function requireAmortizationYears(tranche: Tranche): number {
+  if (tranche.amortizationYears === undefined) {
+    throw new Error(`trancheAmortizationSchedule: tranche of type "${tranche.type}" is missing amortizationYears.`);
+  }
+  return tranche.amortizationYears;
+}
+
+function monthlyTrancheRows(tranche: Tranche): TrancheAmortizationRow[] {
   const monthlyRate = compoundingRateForTranche(tranche);
-  const totalMonths = tranche.amortizationYears * 12;
+  const totalMonths = requireAmortizationYears(tranche) * 12;
   const payment = PMT(monthlyRate, totalMonths, -tranche.amount);
 
   const rows: TrancheAmortizationRow[] = [];
@@ -143,9 +156,60 @@ function annualizeTrancheRows(monthlyRows: TrancheAmortizationRow[], amortizatio
  * "annual" just rolls twelve of those rows into one summary row per year.
  */
 export function trancheAmortizationSchedule(
-  tranche: AmortizingTranche,
+  tranche: Tranche,
   frequency: "monthly" | "annual" = "monthly",
 ): TrancheAmortizationRow[] {
   const monthlyRows = monthlyTrancheRows(tranche);
-  return frequency === "monthly" ? monthlyRows : annualizeTrancheRows(monthlyRows, tranche.amortizationYears);
+  return frequency === "monthly" ? monthlyRows : annualizeTrancheRows(monthlyRows, requireAmortizationYears(tranche));
+}
+
+/**
+ * Draw/repayment schedule for a presale_deposit facility. Deliberately not
+ * a loan-amortization variant: drawnBalance only steps up when a milestone
+ * releases more of the trust (per tranche.milestones), interest accrues
+ * interest-only against whatever's currently drawn (US-style monthly
+ * compounding, same fallback E2 already uses for mezzanine/equity), and the
+ * whole outstanding balance is retired in a single bullet repayment at
+ * repaymentMonth rather than paid down period over period.
+ */
+export function buildPresaleDepositSchedule(tranche: Tranche, repaymentMonth: number): PresaleDepositScheduleRow[] {
+  if (tranche.type !== "presale_deposit") {
+    throw new Error(`buildPresaleDepositSchedule: expected type "presale_deposit", got "${tranche.type}".`);
+  }
+  const milestones = tranche.milestones;
+  if (!milestones || milestones.length === 0) {
+    throw new Error("buildPresaleDepositSchedule: tranche is missing milestones.");
+  }
+
+  const sortedMilestones = [...milestones].sort((a, b) => a.month - b.month);
+  const monthlyRate = monthlyCompoundingRate(tranche.rate);
+
+  function drawnBalanceAt(month: number): number {
+    let releasePercent = 0;
+    for (const milestone of sortedMilestones) {
+      if (milestone.month <= month) {
+        releasePercent = milestone.cumulativeReleasePercent;
+      }
+    }
+    return tranche.amount * releasePercent;
+  }
+
+  const rows: PresaleDepositScheduleRow[] = [];
+  let cumulativeInterest = 0;
+
+  for (let month = 1; month <= repaymentMonth; month++) {
+    const drawnBalance = drawnBalanceAt(month);
+    const interestAccrued = drawnBalance * monthlyRate;
+    cumulativeInterest += interestAccrued;
+
+    rows.push({
+      period: month,
+      drawnBalance,
+      interestAccrued,
+      cumulativeInterest,
+      repaid: month === repaymentMonth,
+    });
+  }
+
+  return rows;
 }

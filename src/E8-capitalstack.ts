@@ -27,11 +27,17 @@ import { Tranche, TrancheResult, CapitalStackResult } from "./types";
 export function calculateCapitalStack(tranches: Tranche[], taxRate?: number): CapitalStackResult {
   const totalCapital = tranches.reduce((sum, t) => sum + t.amount, 0);
 
-  const trancheResults: TrancheResult[] = tranches.map((t) => ({
-    ...t,
-    interestCost: t.amount * t.rate,
-    capitalWeight: t.amount / totalCapital,
-  }));
+  const trancheResults: TrancheResult[] = tranches.map((t) => {
+    const commitmentFeeAmount = t.amount * (t.commitmentFeePercent ?? 0);
+
+    return {
+      ...t,
+      interestCost: t.amount * t.rate,
+      capitalWeight: t.amount / totalCapital,
+      commitmentFeeAmount,
+      netAdvance: t.amount - (t.interestReserveAmount ?? 0) - commitmentFeeAmount,
+    };
+  });
 
   const totalDebtService = trancheResults
     .filter((t) => t.type !== "equity")

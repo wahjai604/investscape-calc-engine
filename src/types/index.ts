@@ -49,3 +49,8 @@ export * from "./E74-fha-mip.types";
 export * from "./E75-conventional-pmi.types";
 export * from "./E76-dscr-loan-sizing.types";
 export * from "./E77-qualifying-rental-income-us.types";
+export * from "./E78-financing-table.types";
+export * from "./E79-deal-grade.types";
+export * from "./E80-budget-actuals.types";
+export * from "./E81-sources-uses.types";
+export * from "./E82-acquisition-structure.types";

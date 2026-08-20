@@ -6,8 +6,8 @@
  * See LICENSE for usage restrictions.
  */
 
-import { amortizationSchedule, remainingBalance, trancheAmortizationSchedule } from "../src/E2-amortization";
-import { MortgageInput, AmortizingTranche } from "../src/types";
+import { amortizationSchedule, remainingBalance, trancheAmortizationSchedule, buildPresaleDepositSchedule } from "../src/E2-amortization";
+import { MortgageInput, Tranche } from "../src/types";
 
 describe("amortizationSchedule / remainingBalance", () => {
   // Golden case from this session's Design work: $706,000 principal, 4.79%,
@@ -54,10 +54,10 @@ describe("trancheAmortizationSchedule", () => {
     // repackaged as a tranche (amount/annualRate instead of
     // purchasePrice/downPaymentPercent) rather than re-deriving a new
     // reference figure, since the underlying math is identical.
-    const seniorDebt: AmortizingTranche = {
+    const seniorDebt: Tranche = {
       type: "senior_debt",
       amount: 706000,
-      annualRate: 0.0479,
+      rate: 0.0479,
       amortizationYears: 25,
     };
 
@@ -97,10 +97,10 @@ describe("trancheAmortizationSchedule", () => {
     // that same payment (balance -= payment - balance*rate), not derived
     // from this library, and are reproducible against any standard US
     // amortization calculator.
-    const equity: AmortizingTranche = {
+    const equity: Tranche = {
       type: "equity",
       amount: 100000,
-      annualRate: 0.06,
+      rate: 0.06,
       amortizationYears: 30,
     };
 
@@ -131,10 +131,70 @@ describe("trancheAmortizationSchedule", () => {
 
   describe("mezzanine (falls back to US monthly, like equity)", () => {
     it("produces the same schedule as an equity tranche with identical amount/rate/term", () => {
-      const mezz: AmortizingTranche = { type: "mezzanine", amount: 100000, annualRate: 0.06, amortizationYears: 30 };
-      const equity: AmortizingTranche = { type: "equity", amount: 100000, annualRate: 0.06, amortizationYears: 30 };
+      const mezz: Tranche = { type: "mezzanine", amount: 100000, rate: 0.06, amortizationYears: 30 };
+      const equity: Tranche = { type: "equity", amount: 100000, rate: 0.06, amortizationYears: 30 };
 
       expect(trancheAmortizationSchedule(mezz, "monthly")).toEqual(trancheAmortizationSchedule(equity, "monthly"));
     });
+  });
+
+  it("throws when amortizationYears is missing (the one runtime check standing in for the schema gap this type used to leave open)", () => {
+    const noTerm: Tranche = { type: "senior_debt", amount: 100000, rate: 0.05 };
+    expect(() => trancheAmortizationSchedule(noTerm)).toThrow(/amortizationYears/);
+  });
+});
+
+describe("buildPresaleDepositSchedule", () => {
+  // $1,000,000 facility @ 1%/yr (monthlyRate = 1/1200), releasing 30% from
+  // month 1, 70% cumulative from month 7, 100% cumulative from month 13
+  // (milestone.month is the first month a release applies, inclusive) —
+  // hand-computed: months 1-6 draw $300,000 ($250.00/mo interest), months
+  // 7-12 draw $700,000 ($583.33/mo), repaid in one bullet at month 12.
+  const presale: Tranche = {
+    type: "presale_deposit",
+    amount: 1000000,
+    rate: 0.01,
+    milestones: [
+      { month: 1, cumulativeReleasePercent: 0.3 },
+      { month: 7, cumulativeReleasePercent: 0.7 },
+      { month: 13, cumulativeReleasePercent: 1.0 },
+    ],
+  };
+
+  it("steps drawnBalance up at each milestone rather than paying it down like a loan", () => {
+    const rows = buildPresaleDepositSchedule(presale, 12);
+
+    expect(rows.slice(0, 6).every((r) => r.drawnBalance === 300000)).toBe(true);
+    expect(rows.slice(6, 12).every((r) => r.drawnBalance === 700000)).toBe(true);
+
+    // Never declines, unlike a TrancheAmortizationRow endingBalance series.
+    for (let i = 1; i < rows.length; i++) {
+      expect(rows[i].drawnBalance).toBeGreaterThanOrEqual(rows[i - 1].drawnBalance);
+    }
+  });
+
+  it("accrues interest-only against the currently drawn balance, matching the hand-computed monthly figures", () => {
+    const rows = buildPresaleDepositSchedule(presale, 12);
+
+    expect(rows[0].interestAccrued).toBeCloseTo(250, 2);
+    expect(rows[6].interestAccrued).toBeCloseTo(583.33, 2);
+    // 6 * 250 + 6 * 583.33 = 1500 + 3500 = 5000
+    expect(rows[11].cumulativeInterest).toBeCloseTo(5000, 1);
+  });
+
+  it("is repaid in a single bullet at the final period, not amortized down over several", () => {
+    const rows = buildPresaleDepositSchedule(presale, 12);
+
+    expect(rows.filter((r) => r.repaid)).toHaveLength(1);
+    expect(rows[rows.length - 1].repaid).toBe(true);
+    expect(rows.slice(0, -1).every((r) => !r.repaid)).toBe(true);
+  });
+
+  it("rejects a non-presale_deposit tranche and a presale_deposit tranche missing milestones", () => {
+    const wrongType: Tranche = { type: "senior_debt", amount: 100000, rate: 0.05, amortizationYears: 10 };
+    expect(() => buildPresaleDepositSchedule(wrongType, 12)).toThrow(/presale_deposit/);
+
+    const noMilestones: Tranche = { type: "presale_deposit", amount: 100000, rate: 0.01 };
+    expect(() => buildPresaleDepositSchedule(noMilestones, 12)).toThrow(/milestones/);
   });
 });

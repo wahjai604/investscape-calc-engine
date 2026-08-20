@@ -16,19 +16,53 @@
  * Use at your own risk.
  */
 
-import { NOIInput, DSCRInput, DSCREvaluationInput, DSCREvaluationResult } from "./types";
+import {
+  NOIInput,
+  NOIInputItemized,
+  NOIResult,
+  OperatingExpenseBreakdown,
+  DSCRInput,
+  DSCREvaluationInput,
+  DSCREvaluationResult,
+} from "./types";
 import { MINIMUM_DSCR } from "./utils/constants";
 
-export function calculateNOI(input: NOIInput): number {
-  const { grossAnnualRent, vacancyRatePercent, annualOperatingExpenses } = input;
+function isItemized(input: NOIInput | NOIInputItemized): input is NOIInputItemized {
+  return "operatingExpenses" in input;
+}
+
+function sumExpenseBreakdown(breakdown: OperatingExpenseBreakdown): number {
+  const { insurance, propertyManagement, propertyTaxes, repairsAndMaintenance, strataOrHOA, other } = breakdown;
+  return insurance + propertyManagement + propertyTaxes + repairsAndMaintenance + strataOrHOA + other;
+}
+
+export function calculateNOI(input: NOIInput | NOIInputItemized): NOIResult {
+  const { grossAnnualRent, vacancyRatePercent } = input;
+  const operatingExpenses = isItemized(input) ? sumExpenseBreakdown(input.operatingExpenses) : input.annualOperatingExpenses;
 
   const vacancyAllowance = grossAnnualRent * vacancyRatePercent;
-  return grossAnnualRent - vacancyAllowance - annualOperatingExpenses;
+  const netOperatingIncome = grossAnnualRent - vacancyAllowance - operatingExpenses;
+
+  return {
+    netOperatingIncome,
+    operatingExpenses,
+    ...(isItemized(input) ? { expenseBreakdown: input.operatingExpenses } : {}),
+  };
 }
 
 export function calculateDSCR(input: DSCRInput): number {
   const { netOperatingIncome, annualDebtService } = input;
   return netOperatingIncome / annualDebtService;
+}
+
+/** NOI / purchasePrice — the unlevered return a buyer earns on the full purchase price, independent of financing. */
+export function calculateCapRate(noi: number, purchasePrice: number): number {
+  return noi / purchasePrice;
+}
+
+/** First-year net cash flow / equity invested — the levered cash return on the investor's actual out-of-pocket equity. */
+export function calculateCashOnCash(firstYearNetCashFlow: number, equityInvested: number): number {
+  return firstYearNetCashFlow / equityInvested;
 }
 
 /**
@@ -39,7 +73,7 @@ export function calculateDSCR(input: DSCRInput): number {
 export function evaluateDSCR(input: DSCREvaluationInput): DSCREvaluationResult {
   const { grossAnnualRent, vacancyRatePercent, annualOperatingExpenses, annualDebtService } = input;
 
-  const netOperatingIncome = calculateNOI({ grossAnnualRent, vacancyRatePercent, annualOperatingExpenses });
+  const { netOperatingIncome } = calculateNOI({ grossAnnualRent, vacancyRatePercent, annualOperatingExpenses });
   const dscr = calculateDSCR({ netOperatingIncome, annualDebtService });
 
   return {
