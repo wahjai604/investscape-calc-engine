@@ -178,6 +178,107 @@ describe("trancheAmortizationSchedule", () => {
       expect(lastRow.endingBalance).toBeCloseTo(0, 0);
     });
   });
+
+  describe("interest_only_bullet (construction loan repaid from unit-sale proceeds)", () => {
+    it("repaymentType omitted (or 'amortizing') produces byte-identical output to before this change — regression guard", () => {
+      const omitted: Tranche = { type: "senior_debt", amount: 706000, rate: 0.0479, amortizationYears: 25 };
+      const explicitAmortizing: Tranche = {
+        type: "senior_debt",
+        amount: 706000,
+        rate: 0.0479,
+        amortizationYears: 25,
+        repaymentType: "amortizing",
+      };
+
+      expect(trancheAmortizationSchedule(explicitAmortizing, "monthly")).toEqual(
+        trancheAmortizationSchedule(omitted, "monthly"),
+      );
+    });
+
+    it("a day-1-draw senior_debt facility (24mo construction + 6mo sell-off) sits flat interest-only through month 29, then pays the full bullet at month 30 with endingBalance genuinely 0", () => {
+      const senior: Tranche = {
+        type: "senior_debt",
+        amount: 6000000,
+        rate: 0.08,
+        repaymentType: "interest_only_bullet",
+        drawMonth: 0,
+        bulletRepaymentMonth: 30,
+      };
+      const rows = trancheAmortizationSchedule(senior, "monthly");
+
+      expect(rows).toHaveLength(30);
+
+      for (const row of rows.slice(0, 29)) {
+        expect(row.beginningBalance).toBeCloseTo(6000000, 6);
+        expect(row.endingBalance).toBeCloseTo(6000000, 6);
+        expect(row.principal).toBe(0);
+        expect(row.interest).toBeGreaterThan(0);
+        expect(row.payment).toBeCloseTo(row.interest, 6);
+      }
+
+      const bulletRow = rows[29];
+      expect(bulletRow.period).toBe(30);
+      expect(bulletRow.principal).toBeCloseTo(6000000, 6);
+      expect(bulletRow.endingBalance).toBe(0);
+    });
+
+    it("a delayed-draw mezzanine (drawMonth: 6) sits at $0 through month 6, then interest-only flat from month 7 through month 29, then bullets to endingBalance === 0 at month 30", () => {
+      const mezz: Tranche = {
+        type: "mezzanine",
+        amount: 1500000,
+        rate: 0.12,
+        repaymentType: "interest_only_bullet",
+        drawMonth: 6,
+        bulletRepaymentMonth: 30,
+      };
+      const rows = trancheAmortizationSchedule(mezz, "monthly");
+
+      const preDraw = rows.slice(0, 6);
+      expect(preDraw).toHaveLength(6);
+      for (const row of preDraw) {
+        expect(row.beginningBalance).toBe(0);
+        expect(row.payment).toBe(0);
+        expect(row.principal).toBe(0);
+        expect(row.interest).toBe(0);
+        expect(row.endingBalance).toBe(0);
+      }
+
+      const flatRows = rows.slice(6, 29);
+      expect(flatRows).toHaveLength(23);
+      for (const row of flatRows) {
+        expect(row.beginningBalance).toBeCloseTo(1500000, 6);
+        expect(row.endingBalance).toBeCloseTo(1500000, 6);
+        expect(row.principal).toBe(0);
+      }
+
+      const bulletRow = rows[rows.length - 1];
+      expect(bulletRow.period).toBe(30);
+      expect(bulletRow.principal).toBeCloseTo(1500000, 6);
+      expect(bulletRow.endingBalance).toBe(0);
+    });
+
+    it("throws a clear error when bulletRepaymentMonth is missing", () => {
+      const noBullet: Tranche = {
+        type: "senior_debt",
+        amount: 6000000,
+        rate: 0.08,
+        repaymentType: "interest_only_bullet",
+      };
+      expect(() => trancheAmortizationSchedule(noBullet, "monthly")).toThrow(/bulletRepaymentMonth/);
+    });
+
+    it("throws a clear error when bulletRepaymentMonth <= drawMonth", () => {
+      const nonsensical: Tranche = {
+        type: "senior_debt",
+        amount: 6000000,
+        rate: 0.08,
+        repaymentType: "interest_only_bullet",
+        drawMonth: 12,
+        bulletRepaymentMonth: 12,
+      };
+      expect(() => trancheAmortizationSchedule(nonsensical, "monthly")).toThrow(/bulletRepaymentMonth/);
+    });
+  });
 });
 
 describe("buildPresaleDepositSchedule", () => {

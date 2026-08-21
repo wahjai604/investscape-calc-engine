@@ -110,11 +110,64 @@ function requireAmortizationYears(tranche: Tranche): number {
   return tranche.amortizationYears;
 }
 
+function requireBulletRepaymentMonth(tranche: Tranche, drawMonth: number): number {
+  const bulletRepaymentMonth = tranche.bulletRepaymentMonth;
+  if (bulletRepaymentMonth === undefined) {
+    throw new Error(
+      `monthlyTrancheRows: tranche of type "${tranche.type}" has repaymentType "interest_only_bullet" but is missing bulletRepaymentMonth.`,
+    );
+  }
+  if (bulletRepaymentMonth <= drawMonth) {
+    throw new Error(
+      `monthlyTrancheRows: bulletRepaymentMonth (${bulletRepaymentMonth}) must be greater than drawMonth (${drawMonth}).`,
+    );
+  }
+  return bulletRepaymentMonth;
+}
+
+/**
+ * The construction-loan mechanic: rows 1..drawMonth are the same
+ * undrawn/zero rows as the amortizing path (reused draw-timing logic), then
+ * the facility sits interest-only at its full drawn amount every period
+ * (no principal paydown) until bulletRepaymentMonth, where the entire
+ * balance is repaid in one lump sum. endingBalance on that final row is
+ * explicitly 0 — a genuine $0 payoff, not a "repaid" flag left sitting on a
+ * stale nonzero balance (see buildPresaleDepositSchedule()'s known gap,
+ * which this mechanic deliberately does not repeat).
+ */
+function interestOnlyBulletTrancheRows(tranche: Tranche, drawMonth: number): TrancheAmortizationRow[] {
+  const bulletRepaymentMonth = requireBulletRepaymentMonth(tranche, drawMonth);
+  const monthlyRate = compoundingRateForTranche(tranche);
+
+  const rows: TrancheAmortizationRow[] = [];
+
+  for (let month = 1; month <= drawMonth; month++) {
+    rows.push({ period: month, beginningBalance: 0, payment: 0, principal: 0, interest: 0, endingBalance: 0 });
+  }
+
+  for (let period = drawMonth + 1; period <= bulletRepaymentMonth; period++) {
+    const beginningBalance = tranche.amount;
+    const interest = beginningBalance * monthlyRate;
+    const isBulletMonth = period === bulletRepaymentMonth;
+    const principal = isBulletMonth ? tranche.amount : 0;
+    const endingBalance = isBulletMonth ? 0 : beginningBalance;
+
+    rows.push({ period, beginningBalance, payment: interest + principal, principal, interest, endingBalance });
+  }
+
+  return rows;
+}
+
 function monthlyTrancheRows(tranche: Tranche): TrancheAmortizationRow[] {
+  const drawMonth = tranche.drawMonth ?? 0;
+
+  if (tranche.repaymentType === "interest_only_bullet") {
+    return interestOnlyBulletTrancheRows(tranche, drawMonth);
+  }
+
   const monthlyRate = compoundingRateForTranche(tranche);
   const totalMonths = requireAmortizationYears(tranche) * 12;
   const payment = PMT(monthlyRate, totalMonths, -tranche.amount);
-  const drawMonth = tranche.drawMonth ?? 0;
 
   const rows: TrancheAmortizationRow[] = [];
 

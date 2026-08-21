@@ -244,3 +244,81 @@ describe("calculateFinancingTable with a delayed-draw (drawMonth) mezzanine", ()
     expect(presaleBalancesWith).toEqual(presaleBalancesWithout);
   });
 });
+
+// A 3-facility deal where senior and mezzanine both use the construction-loan
+// interest_only_bullet mechanic, but with genuinely different bullet months
+// (24mo construction + senior's own 6mo sell-off vs. mezzanine's own 4mo
+// sell-off) — confirms each facility's bullet timing is independent, not a
+// shared/hardcoded value. Equity carries no schedule and is unaffected.
+describe("calculateFinancingTable with interest_only_bullet senior + mezzanine on different bullet months", () => {
+  const seniorBullet: FinancingFacility = {
+    id: "senior",
+    type: "senior_debt",
+    amount: 6000000,
+    rate: 0.08,
+    repaymentType: "interest_only_bullet",
+    drawMonth: 0,
+    bulletRepaymentMonth: 30,
+  };
+
+  const mezzBullet: FinancingFacility = {
+    id: "mezz",
+    type: "mezzanine",
+    amount: 1500000,
+    rate: 0.12,
+    repaymentType: "interest_only_bullet",
+    drawMonth: 6,
+    bulletRepaymentMonth: 28,
+  };
+
+  const equity: FinancingFacility = {
+    id: "equity",
+    type: "equity",
+    amount: 2000000,
+    rate: 0,
+  };
+
+  const bulletFacilities = [seniorBullet, mezzBullet, equity];
+  const months = 30;
+  const bulletResult = calculateFinancingTable({ facilities: bulletFacilities, months });
+
+  it("mezzanine hits exactly $0 at period 28 while senior is still outstanding", () => {
+    const period28 = bulletResult.combinedSeries.find((r) => r.period === 28)!;
+    expect(period28.balancesByFacility["mezz"]).toBe(0);
+    expect(period28.balancesByFacility["senior"]).toBeCloseTo(6000000, 2);
+  });
+
+  it("mezzanine is still outstanding (flat, interest-only) the period before its own bullet", () => {
+    const period27 = bulletResult.combinedSeries.find((r) => r.period === 27)!;
+    expect(period27.balancesByFacility["mezz"]).toBeCloseTo(1500000, 2);
+  });
+
+  it("senior hits exactly $0 at period 30, its own (later) bullet month", () => {
+    const period30 = bulletResult.combinedSeries.find((r) => r.period === 30)!;
+    expect(period30.balancesByFacility["senior"]).toBe(0);
+    expect(period30.balancesByFacility["mezz"]).toBe(0);
+  });
+
+  it("senior is still outstanding (flat, interest-only) the period before its own bullet", () => {
+    const period29 = bulletResult.combinedSeries.find((r) => r.period === 29)!;
+    expect(period29.balancesByFacility["senior"]).toBeCloseTo(6000000, 2);
+  });
+
+  it("totalOutstanding reflects both independent bullet transitions correctly at each point", () => {
+    const period27 = bulletResult.combinedSeries.find((r) => r.period === 27)!;
+    const period28 = bulletResult.combinedSeries.find((r) => r.period === 28)!;
+    const period29 = bulletResult.combinedSeries.find((r) => r.period === 29)!;
+    const period30 = bulletResult.combinedSeries.find((r) => r.period === 30)!;
+
+    expect(period27.totalOutstanding).toBeCloseTo(6000000 + 1500000, 2);
+    expect(period28.totalOutstanding).toBeCloseTo(6000000, 2);
+    expect(period29.totalOutstanding).toBeCloseTo(6000000, 2);
+    expect(period30.totalOutstanding).toBe(0);
+  });
+
+  it("equity carries no balance entry regardless of the bullet mechanic on the other facilities", () => {
+    for (const row of bulletResult.combinedSeries) {
+      expect(row.balancesByFacility["equity"]).toBeUndefined();
+    }
+  });
+});

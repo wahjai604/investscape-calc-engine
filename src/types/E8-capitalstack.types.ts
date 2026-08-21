@@ -19,6 +19,16 @@
 export type TrancheType = "senior_debt" | "mezzanine" | "equity" | "presale_deposit";
 
 /**
+ * How a senior_debt/mezzanine facility's schedule pays down principal.
+ * "amortizing" is today's existing PMT-based P&I behavior (the default when
+ * repaymentType is omitted). "interest_only_bullet" is the construction-loan
+ * mechanic: interest-only through the build, full principal repaid in one
+ * lump sum from unit-sale proceeds at project completion — see
+ * bulletRepaymentMonth on Tranche.
+ */
+export type TrancheRepaymentType = "amortizing" | "interest_only_bullet";
+
+/**
  * A step in a presale_deposit facility's trust-release schedule. Presale
  * deposits are held in trust and released to the project in chunks as
  * milestones are hit (e.g. building permit, an absorption threshold,
@@ -59,6 +69,25 @@ export interface Tranche {
    * schedule at all.
    */
   drawMonth?: number;
+  /**
+   * How this senior_debt/mezzanine facility's principal is repaid. Defaults
+   * to "amortizing" when omitted, matching today's existing PMT-based P&I
+   * behavior (fully backward compatible). Set to "interest_only_bullet" for
+   * the real-world mechanic of a construction loan: interest-only accrual
+   * through the build, then the full outstanding balance repaid in one
+   * lump sum from unit-sale proceeds at project completion (see
+   * bulletRepaymentMonth). Does not apply to presale_deposit or equity.
+   */
+  repaymentType?: TrancheRepaymentType;
+  /**
+   * Month (0 = deal start) at which an "interest_only_bullet" facility's
+   * full outstanding balance is repaid in one lump sum — e.g. a 24-month
+   * construction period plus a 6-month unit sell-off, giving
+   * bulletRepaymentMonth: 30. Required (and must be greater than drawMonth)
+   * when repaymentType is "interest_only_bullet"; ignored/unused for
+   * "amortizing" facilities.
+   */
+  bulletRepaymentMonth?: number;
   /** Required by buildPresaleDepositSchedule() for presale_deposit facilities — the trust release schedule. Not used by other tranche types. */
   milestones?: PresaleMilestone[];
   /** Loan-to-cost — this facility's amount as a share of total project cost. Supplied by the caller (derived from project totals outside this module); echoed through, not recomputed here. */
