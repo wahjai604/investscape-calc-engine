@@ -294,3 +294,33 @@ export const BUDGET_VARIANCE_ON_TRACK_ABSOLUTE_FLOOR = 500;
  * two sides to match.
  */
 export const SOURCES_USES_BALANCE_TOLERANCE = 0.01;
+
+// --- E83: Three-test commercial loan sizing (LTV / DSCR / debt yield) ---
+// These are suggested starting points for a UI/caller to pre-fill, not
+// fallback defaults applied inside calculateCommercialLoanSizing() itself
+// — every field on CommercialLoanSizingInput is required. Debt yield in
+// particular varies a lot by lender type: CMBS lenders commonly require
+// 10% rather than the more common bank/life-co 8% used here, which is
+// exactly why minDebtYieldPercent has to stay a caller-supplied input
+// rather than a hardcoded constant baked into the engine.
+
+/** Common conventional/life-co commercial max LTV. */
+export const COMMERCIAL_LOAN_SIZING_MAX_LTV_PERCENT_DEFAULT = 70;
+/** Common commercial minimum DSCR (matches E9's MINIMUM_DSCR-adjacent lender-bankability range, but kept as its own named constant since this is a different test in a different engine). */
+export const COMMERCIAL_LOAN_SIZING_MIN_DSCR_DEFAULT = 1.25;
+/** Common bank/life-co minimum debt yield; CMBS lenders often require 10% instead — see the section note above. */
+export const COMMERCIAL_LOAN_SIZING_MIN_DEBT_YIELD_PERCENT_DEFAULT = 8;
+
+// --- E84: commercial rent roll analytics ---
+
+/**
+ * Above this share of total annualized base rent expiring in a single
+ * calendar year, a rent roll is considered dangerously concentrated —
+ * refinancing or selling in (or just before) that year runs into a lender
+ * or buyer discounting the asset for rollover risk. 30% is a common
+ * underwriting rule of thumb (no single year should hold more than
+ * roughly a third of the building's income at risk at once); kept as a
+ * named constant rather than inline so calculateExpiryConcentration's
+ * threshold is visible and tunable in one place.
+ */
+export const COMMERCIAL_RENT_ROLL_EXPIRY_CONCENTRATION_THRESHOLD_PERCENT = 30;

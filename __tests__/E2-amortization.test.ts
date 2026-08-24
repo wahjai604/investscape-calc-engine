@@ -6,7 +6,13 @@
  * See LICENSE for usage restrictions.
  */
 
-import { amortizationSchedule, remainingBalance, trancheAmortizationSchedule, buildPresaleDepositSchedule } from "../src/E2-amortization";
+import {
+  amortizationSchedule,
+  remainingBalance,
+  trancheAmortizationSchedule,
+  buildPresaleDepositSchedule,
+  averageDrawFactor,
+} from "../src/E2-amortization";
 import { MortgageInput, Tranche } from "../src/types";
 
 describe("amortizationSchedule / remainingBalance", () => {
@@ -279,6 +285,110 @@ describe("trancheAmortizationSchedule", () => {
       expect(() => trancheAmortizationSchedule(nonsensical, "monthly")).toThrow(/bulletRepaymentMonth/);
     });
   });
+
+  describe("drawSchedule: scurve (progressive construction drawdown, opt-in)", () => {
+    const flatSenior: Tranche = {
+      type: "senior_debt",
+      amount: 6000000,
+      rate: 0.08,
+      repaymentType: "interest_only_bullet",
+      drawMonth: 0,
+      bulletRepaymentMonth: 30,
+    };
+
+    it("drawSchedule omitted produces byte-identical rows to before this change — regression guard proving the default path is untouched", () => {
+      const noDrawSchedule: Tranche = { ...flatSenior };
+      const explicitFlat: Tranche = { ...flatSenior, drawSchedule: "flat" };
+
+      const rows = trancheAmortizationSchedule(noDrawSchedule, "monthly");
+      expect(rows).toHaveLength(30);
+      for (const row of rows.slice(0, 29)) {
+        expect(row.beginningBalance).toBeCloseTo(6000000, 6);
+        expect(row.endingBalance).toBeCloseTo(6000000, 6);
+        expect(row.principal).toBe(0);
+      }
+      expect(rows[29].principal).toBeCloseTo(6000000, 6);
+      expect(rows[29].endingBalance).toBe(0);
+
+      expect(trancheAmortizationSchedule(explicitFlat, "monthly")).toEqual(rows);
+    });
+
+    it("ramps beginningBalance along the smoothstep curve during construction, then sits flat once construction completes", () => {
+      const scurve: Tranche = { ...flatSenior, drawSchedule: "scurve", constructionMonths: 12 };
+      const rows = trancheAmortizationSchedule(scurve, "monthly");
+
+      const smoothstep = (x: number) => 3 * x * x - 2 * x * x * x;
+
+      // period = drawMonth + monthsIntoConstruction = 0 + 1 = 1
+      const month1 = rows.find((r) => r.period === 1)!;
+      expect(month1.beginningBalance).toBeCloseTo(6000000 * smoothstep(1 / 12), 2);
+      expect(month1.beginningBalance).toBeLessThan(6000000 * 0.1);
+
+      const month6 = rows.find((r) => r.period === 6)!;
+      expect(month6.beginningBalance).toBeCloseTo(6000000 * smoothstep(6 / 12), 2);
+      expect(month6.beginningBalance).toBeCloseTo(3000000, -3);
+
+      const month12 = rows.find((r) => r.period === 12)!;
+      expect(month12.beginningBalance).toBeCloseTo(6000000, 2);
+
+      const month20 = rows.find((r) => r.period === 20)!;
+      expect(month20.beginningBalance).toBeCloseTo(6000000, 2);
+    });
+
+    it("produces strictly less cumulative interest than an equivalent flat tranche, since average balance during ramp-up is lower", () => {
+      const scurve: Tranche = { ...flatSenior, drawSchedule: "scurve", constructionMonths: 24 };
+      const flat: Tranche = { ...flatSenior };
+
+      const scurveInterest = trancheAmortizationSchedule(scurve, "monthly").reduce((sum, r) => sum + r.interest, 0);
+      const flatInterest = trancheAmortizationSchedule(flat, "monthly").reduce((sum, r) => sum + r.interest, 0);
+
+      expect(scurveInterest).toBeLessThan(flatInterest);
+    });
+
+    it("bullet repayment is unaffected by drawSchedule: final row still pays the full amount and ends at $0", () => {
+      const scurve: Tranche = { ...flatSenior, drawSchedule: "scurve", constructionMonths: 24 };
+      const rows = trancheAmortizationSchedule(scurve, "monthly");
+      const bulletRow = rows[rows.length - 1];
+
+      expect(bulletRow.period).toBe(30);
+      expect(bulletRow.principal).toBeCloseTo(6000000, 6);
+      expect(bulletRow.endingBalance).toBe(0);
+    });
+
+    it("throws when drawSchedule is 'scurve' but constructionMonths is missing", () => {
+      const missing: Tranche = { ...flatSenior, drawSchedule: "scurve" };
+      expect(() => trancheAmortizationSchedule(missing, "monthly")).toThrow(/constructionMonths/);
+    });
+
+    it("throws when constructionMonths exceeds the tranche's own term (bulletRepaymentMonth - drawMonth)", () => {
+      const tooLong: Tranche = { ...flatSenior, drawSchedule: "scurve", constructionMonths: 31 };
+      expect(() => trancheAmortizationSchedule(tooLong, "monthly")).toThrow(/constructionMonths/);
+    });
+
+    it("throws when drawSchedule is 'scurve' on a tranche whose repaymentType isn't interest_only_bullet", () => {
+      const wrongRepaymentType: Tranche = {
+        type: "senior_debt",
+        amount: 706000,
+        rate: 0.0479,
+        amortizationYears: 25,
+        drawSchedule: "scurve",
+        constructionMonths: 12,
+      };
+      expect(() => trancheAmortizationSchedule(wrongRepaymentType, "monthly")).toThrow(/scurve/);
+    });
+  });
+});
+
+describe("averageDrawFactor", () => {
+  it("converges toward 0.5 as constructionMonths grows, since the smoothstep curve is symmetric", () => {
+    expect(averageDrawFactor(24)).toBeCloseTo(0.5, 1);
+    expect(Math.abs(averageDrawFactor(24) - 0.5)).toBeLessThan(0.03);
+  });
+
+  it("throws for non-positive constructionMonths", () => {
+    expect(() => averageDrawFactor(0)).toThrow(/constructionMonths/);
+    expect(() => averageDrawFactor(-1)).toThrow(/constructionMonths/);
+  });
 });
 
 describe("buildPresaleDepositSchedule", () => {
@@ -310,13 +420,19 @@ describe("buildPresaleDepositSchedule", () => {
     }
   });
 
-  it("accrues interest-only against the currently drawn balance, matching the hand-computed monthly figures", () => {
+  it("never accrues interest, regardless of drawn balance — a presale deposit is trust-held buyer earnest money, not a loan the developer has drawn", () => {
     const rows = buildPresaleDepositSchedule(presale, 12);
 
-    expect(rows[0].interestAccrued).toBeCloseTo(250, 2);
-    expect(rows[6].interestAccrued).toBeCloseTo(583.33, 2);
-    // 6 * 250 + 6 * 583.33 = 1500 + 3500 = 5000
-    expect(rows[11].cumulativeInterest).toBeCloseTo(5000, 1);
+    expect(rows.every((r) => r.interestAccrued === 0)).toBe(true);
+    expect(rows.every((r) => r.cumulativeInterest === 0)).toBe(true);
+  });
+
+  it("ignores tranche.rate entirely for interest purposes: a nonzero rate still produces interestAccrued: 0 on every row", () => {
+    const highRatePresale: Tranche = { ...presale, rate: 0.25 };
+    const rows = buildPresaleDepositSchedule(highRatePresale, 12);
+
+    expect(rows.every((r) => r.interestAccrued === 0)).toBe(true);
+    expect(rows.every((r) => r.cumulativeInterest === 0)).toBe(true);
   });
 
   it("is repaid in a single bullet at the final period, not amortized down over several", () => {

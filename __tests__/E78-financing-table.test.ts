@@ -33,14 +33,11 @@ const mezz: FinancingFacility = {
   commitmentFeePercent: 0.02,
 };
 
-// rate 1%/yr => monthlyRate = 1/1200. Milestones release 30% from month 1,
-// 70% cumulative from month 7, 100% cumulative from month 13 (inclusive) —
-// hand-computed cumulative interest: months 1-6 @ $300,000 drawn =
-// $250.00/mo (=$1,500 total); months 7-12 @ $700,000 drawn = $583.33/mo
-// (=$3,500 total, running $5,000); months 13-24 @ $1,000,000 drawn =
-// $833.33/mo. A $12,000 reserve is exhausted 7,000/833.33 = 8.4 months into
-// that final stretch, i.e. during period 21 (cumulative interest crosses
-// $12,000 between periods 20 and 21).
+// Milestones release 30% from month 1, 70% cumulative from month 7, 100%
+// cumulative from month 13 (inclusive). presale_deposit facilities accrue
+// no interest (trust-held buyer earnest money, not developer debt), so
+// unlike senior/mezzanine, rate here is carried on the tranche but never
+// factored into interestAccrued/reserve math.
 const presale: FinancingFacility = {
   id: "presale",
   type: "presale_deposit",
@@ -88,21 +85,21 @@ describe("calculateFinancingTable", () => {
     expect(presaleSummary.netAdvance).toBeCloseTo(983000, 2);
   });
 
-  it("depletes the presale facility's interest reserve correctly: still positive at period 20, exhausted by period 21", () => {
+  it("never depletes the presale facility's interest reserve: presale_deposit accrues no interest, so reserveBalance sits at the full reserve amount for the whole schedule", () => {
     const presaleSummary = result.facilities.find((f) => f.id === "presale")!;
     const reserveSchedule = presaleSummary.interestReserveSchedule;
 
-    const period20 = reserveSchedule.find((r) => r.period === 20)!;
-    const period21 = reserveSchedule.find((r) => r.period === 21)!;
+    expect(reserveSchedule.every((r) => r.interestAccrued === 0)).toBe(true);
+    expect(reserveSchedule.every((r) => r.reserveBalance === presaleSummary.interestReserveAmount)).toBe(true);
+    expect(reserveSchedule.every((r) => r.reserveDepleted === false)).toBe(true);
+  });
 
-    expect(period20.reserveBalance).toBeCloseTo(333.33, 1);
-    expect(period20.reserveDepleted).toBe(false);
+  it("scopes the no-interest fix to presale_deposit only: senior_debt in the same table still accrues real interest and depletes its reserve", () => {
+    const seniorSummary = result.facilities.find((f) => f.id === "senior")!;
+    const reserveSchedule = seniorSummary.interestReserveSchedule;
 
-    expect(period21.reserveBalance).toBe(0);
-    expect(period21.reserveDepleted).toBe(true);
-
-    // Once depleted, stays depleted for the rest of the schedule.
-    expect(reserveSchedule.slice(20).every((r) => r.reserveDepleted)).toBe(true);
+    expect(reserveSchedule.some((r) => r.interestAccrued > 0)).toBe(true);
+    expect(reserveSchedule.some((r) => r.reserveDepleted)).toBe(true);
   });
 
   it("reserve balances are monotonically non-increasing for every facility (a reserve never refills)", () => {

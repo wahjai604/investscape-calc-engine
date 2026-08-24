@@ -126,14 +126,90 @@ function requireBulletRepaymentMonth(tranche: Tranche, drawMonth: number): numbe
 }
 
 /**
+ * Standard construction-finance drawdown curve: monotonic 0→1, symmetric,
+ * slow-fast-slow. Same formula as the companion HTML reconstruction's
+ * chart/interest-reserve S-curve — kept here as the engine's own copy
+ * since the two codebases are intentionally decoupled, not because the
+ * math differs.
+ */
+function smoothstep(x: number): number {
+  const clamped = Math.max(0, Math.min(1, x));
+  return 3 * clamped * clamped - 2 * clamped * clamped * clamped;
+}
+
+/**
+ * Drawn balance at a given point into the construction period, following
+ * the S-curve rather than jumping straight to the full committed amount.
+ * monthsIntoConstruction is 1-indexed from the first draw month (i.e. the
+ * first month after drawMonth is monthsIntoConstruction = 1).
+ */
+function scurveDrawnBalance(tranche: Tranche, monthsIntoConstruction: number, constructionMonths: number): number {
+  return tranche.amount * smoothstep(monthsIntoConstruction / constructionMonths);
+}
+
+/**
+ * Discrete average of the curve's cumulative-drawn fraction across whole
+ * construction months — converges to the continuous integral's exact 0.5
+ * for any reasonably long construction period, since the curve is
+ * symmetric. Exposed so callers who need a single scalar reference value
+ * (e.g. a reserve-sizing formula, rather than a full monthly schedule)
+ * don't have to re-derive this.
+ */
+export function averageDrawFactor(constructionMonths: number): number {
+  if (constructionMonths <= 0) {
+    throw new Error(`averageDrawFactor: constructionMonths must be positive, got ${constructionMonths}.`);
+  }
+  let sum = 0;
+  for (let month = 1; month <= constructionMonths; month++) {
+    sum += smoothstep(month / constructionMonths);
+  }
+  return sum / constructionMonths;
+}
+
+function requireConstructionMonths(tranche: Tranche, drawMonth: number, bulletRepaymentMonth: number): number {
+  const constructionMonths = tranche.constructionMonths;
+  if (constructionMonths === undefined) {
+    throw new Error(
+      `interestOnlyBulletTrancheRows: tranche has drawSchedule "scurve" but is missing constructionMonths.`,
+    );
+  }
+  if (constructionMonths > bulletRepaymentMonth - drawMonth) {
+    throw new Error(
+      `interestOnlyBulletTrancheRows: constructionMonths (${constructionMonths}) exceeds the tranche's own term ` +
+        `(bulletRepaymentMonth ${bulletRepaymentMonth} - drawMonth ${drawMonth} = ${bulletRepaymentMonth - drawMonth}).`,
+    );
+  }
+  return constructionMonths;
+}
+
+function resolveBeginningBalance(tranche: Tranche, period: number, drawMonth: number, bulletRepaymentMonth: number): number {
+  if (tranche.drawSchedule !== "scurve") {
+    return tranche.amount; // existing flat behavior, unchanged default
+  }
+  const constructionMonths = requireConstructionMonths(tranche, drawMonth, bulletRepaymentMonth);
+  const monthsIntoConstruction = period - drawMonth;
+  if (monthsIntoConstruction >= constructionMonths) {
+    return tranche.amount; // construction complete, fully drawn, flat until bullet repayment
+  }
+  return scurveDrawnBalance(tranche, monthsIntoConstruction, constructionMonths);
+}
+
+/**
  * The construction-loan mechanic: rows 1..drawMonth are the same
  * undrawn/zero rows as the amortizing path (reused draw-timing logic), then
- * the facility sits interest-only at its full drawn amount every period
- * (no principal paydown) until bulletRepaymentMonth, where the entire
- * balance is repaid in one lump sum. endingBalance on that final row is
- * explicitly 0 — a genuine $0 payoff, not a "repaid" flag left sitting on a
- * stale nonzero balance (see buildPresaleDepositSchedule()'s known gap,
- * which this mechanic deliberately does not repeat).
+ * the facility sits interest-only (no scheduled principal paydown) until
+ * bulletRepaymentMonth, where the entire balance is repaid in one lump sum.
+ * endingBalance on that final row is explicitly 0 — a genuine $0 payoff,
+ * not a "repaid" flag left sitting on a stale nonzero balance (see
+ * buildPresaleDepositSchedule()'s known gap, which this mechanic
+ * deliberately does not repeat).
+ *
+ * By default the facility is treated as fully drawn from the month after
+ * drawMonth (tranche.drawSchedule omitted or "flat") — correct for plain
+ * bridge/bullet debt. Setting drawSchedule: "scurve" instead ramps the
+ * balance up over constructionMonths following a standard construction-
+ * finance S-curve, correct for a genuine construction loan that draws down
+ * progressively as the building gets built.
  */
 function interestOnlyBulletTrancheRows(tranche: Tranche, drawMonth: number): TrancheAmortizationRow[] {
   const bulletRepaymentMonth = requireBulletRepaymentMonth(tranche, drawMonth);
@@ -146,7 +222,7 @@ function interestOnlyBulletTrancheRows(tranche: Tranche, drawMonth: number): Tra
   }
 
   for (let period = drawMonth + 1; period <= bulletRepaymentMonth; period++) {
-    const beginningBalance = tranche.amount;
+    const beginningBalance = resolveBeginningBalance(tranche, period, drawMonth, bulletRepaymentMonth);
     const interest = beginningBalance * monthlyRate;
     const isBulletMonth = period === bulletRepaymentMonth;
     const principal = isBulletMonth ? tranche.amount : 0;
@@ -160,6 +236,12 @@ function interestOnlyBulletTrancheRows(tranche: Tranche, drawMonth: number): Tra
 
 function monthlyTrancheRows(tranche: Tranche): TrancheAmortizationRow[] {
   const drawMonth = tranche.drawMonth ?? 0;
+
+  if (tranche.drawSchedule === "scurve" && tranche.repaymentType !== "interest_only_bullet") {
+    throw new Error(
+      `monthlyTrancheRows: drawSchedule "scurve" only applies to repaymentType "interest_only_bullet", got "${tranche.repaymentType}".`,
+    );
+  }
 
   if (tranche.repaymentType === "interest_only_bullet") {
     return interestOnlyBulletTrancheRows(tranche, drawMonth);
@@ -225,11 +307,19 @@ export function trancheAmortizationSchedule(
 /**
  * Draw/repayment schedule for a presale_deposit facility. Deliberately not
  * a loan-amortization variant: drawnBalance only steps up when a milestone
- * releases more of the trust (per tranche.milestones), interest accrues
- * interest-only against whatever's currently drawn (US-style monthly
- * compounding, same fallback E2 already uses for mezzanine/equity), and the
- * whole outstanding balance is retired in a single bullet repayment at
+ * releases more of the trust (per tranche.milestones), and the whole
+ * outstanding balance is retired in a single bullet repayment at
  * repaymentMonth rather than paid down period over period.
+ *
+ * interestAccrued is intentionally always 0 here. A presale deposit is
+ * buyer earnest money held in the developer's lawyer's trust account as
+ * proof of demand for the bank's gate — it is not a loan the developer has
+ * drawn, and the developer pays no interest on it. It nets against the
+ * buyer's final purchase price at completion. tranche.rate is still
+ * accepted on the type for backward compatibility with existing saved
+ * deals, but is deliberately not read here — do not reintroduce an
+ * interest calculation on this facility type without re-litigating this
+ * decision; see the "Presale Gate Rework" design doc, Aug 24 2026.
  */
 export function buildPresaleDepositSchedule(tranche: Tranche, repaymentMonth: number): PresaleDepositScheduleRow[] {
   if (tranche.type !== "presale_deposit") {
@@ -241,7 +331,6 @@ export function buildPresaleDepositSchedule(tranche: Tranche, repaymentMonth: nu
   }
 
   const sortedMilestones = [...milestones].sort((a, b) => a.month - b.month);
-  const monthlyRate = monthlyCompoundingRate(tranche.rate);
 
   function drawnBalanceAt(month: number): number {
     let releasePercent = 0;
@@ -254,18 +343,15 @@ export function buildPresaleDepositSchedule(tranche: Tranche, repaymentMonth: nu
   }
 
   const rows: PresaleDepositScheduleRow[] = [];
-  let cumulativeInterest = 0;
 
   for (let month = 1; month <= repaymentMonth; month++) {
     const drawnBalance = drawnBalanceAt(month);
-    const interestAccrued = drawnBalance * monthlyRate;
-    cumulativeInterest += interestAccrued;
 
     rows.push({
       period: month,
       drawnBalance,
-      interestAccrued,
-      cumulativeInterest,
+      interestAccrued: 0,
+      cumulativeInterest: 0,
       repaid: month === repaymentMonth,
     });
   }

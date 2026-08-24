@@ -98,6 +98,21 @@ export interface Tranche {
   interestReserveAmount?: number;
   /** Lender commitment fee as a percent (0–1) of this facility's amount, charged once at close. */
   commitmentFeePercent?: number;
+  /**
+   * Draw schedule shape for this tranche's balance during the construction
+   * period. Defaults to "flat" (today's existing behavior: fully drawn the
+   * month after drawMonth) when omitted, so every existing caller and test
+   * is unaffected. "scurve" only applies when repaymentType is
+   * "interest_only_bullet" — it has no meaning for amortizing tranches.
+   */
+  drawSchedule?: "flat" | "scurve";
+  /**
+   * Length of the construction/draw-down period in months, starting the
+   * month after drawMonth. Required when drawSchedule is "scurve". Must be
+   * less than or equal to (bulletRepaymentMonth - drawMonth) — the facility
+   * can't still be drawing down after it's already been repaid.
+   */
+  constructionMonths?: number;
 }
 
 export interface TrancheResult extends Tranche {

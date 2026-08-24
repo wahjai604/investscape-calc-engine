@@ -54,3 +54,5 @@ export * from "./E79-deal-grade.types";
 export * from "./E80-budget-actuals.types";
 export * from "./E81-sources-uses.types";
 export * from "./E82-acquisition-structure.types";
+export * from "./E83-commercial-loan-sizing.types";
+export * from "./E84-commercial-rent-roll.types";

@@ -28,6 +28,8 @@ export {
   calculateMonthlyUSMortgagePayment,
   semiAnnualToMonthlyRate,
   monthlyCompoundingRate,
+  PMT,
+  presentValueFromPayment,
 } from "./E1-mortgage";
 
 export {
@@ -35,6 +37,7 @@ export {
   remainingBalance,
   trancheAmortizationSchedule,
   buildPresaleDepositSchedule,
+  averageDrawFactor,
 } from "./E2-amortization";
 
 export { projectCashFlows } from "./E3-cashflow";
@@ -177,6 +180,25 @@ export { calculateSourcesUses } from "./E81-sources-uses";
 // ============================================================================
 
 export { calculateAcquisitionStructure } from "./E82-acquisition-structure";
+
+// ============================================================================
+// E83: Three-Test Commercial Loan Sizing (LTV / DSCR / Debt Yield)
+// ============================================================================
+
+export { calculateCommercialLoanSizing } from "./E83-commercial-loan-sizing";
+
+// ============================================================================
+// E84: Commercial Rent Roll Analytics (WALT / Rollover / Occupancy /
+// Base Rent & Recoveries / Expiry Concentration)
+// ============================================================================
+
+export {
+  calculateWALT,
+  calculateRolloverSchedule,
+  calculateOccupancy,
+  calculateBaseRentAndRecoveries,
+  calculateExpiryConcentration,
+} from "./E84-commercial-rent-roll";
 
 // ============================================================================
 // Phase 2 scaffolds (typed contracts only — not implemented, not
