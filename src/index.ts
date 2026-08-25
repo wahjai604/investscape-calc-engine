@@ -38,6 +38,7 @@ export {
   trancheAmortizationSchedule,
   buildPresaleDepositSchedule,
   averageDrawFactor,
+  splicedRefinanceSchedule,
 } from "./E2-amortization";
 
 export { projectCashFlows } from "./E3-cashflow";

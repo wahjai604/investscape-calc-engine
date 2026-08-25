@@ -90,6 +90,45 @@ export function remainingBalance(loan: MortgageInput, country: MortgageCountry, 
 }
 
 /**
+ * A continuous, month-indexed schedule spanning a mid-hold refinance event:
+ * the original loan's rows up through refinanceMonth, then the new loan's
+ * rows from refinanceMonth+1 onward, renumbered onto one shared timeline.
+ *
+ * Mechanically thin on purpose — every building block already exists
+ * (amortizationSchedule() for each segment); this function's only real job
+ * is the splice/renumbering, not new financial math. newLoan.purchasePrice
+ * is the new loan's principal (the caller is responsible for computing
+ * that — payoff amount plus any cash-out — this function doesn't infer it,
+ * since "how much cash-out" is a product/UI decision, not an amortization
+ * concern).
+ */
+export function splicedRefinanceSchedule(
+  originalLoan: MortgageInput,
+  refinanceMonth: number,
+  newLoan: MortgageInput,
+  country: MortgageCountry,
+  totalMonths: number,
+): AmortizationRow[] {
+  if (!Number.isInteger(refinanceMonth) || refinanceMonth <= 0) {
+    throw new Error(`splicedRefinanceSchedule: refinanceMonth must be a positive integer, got ${refinanceMonth}.`);
+  }
+  if (refinanceMonth >= totalMonths) {
+    throw new Error(
+      `splicedRefinanceSchedule: refinanceMonth (${refinanceMonth}) must be strictly less than totalMonths (${totalMonths}).`,
+    );
+  }
+  if (newLoan.purchasePrice <= 0) {
+    throw new Error(`splicedRefinanceSchedule: newLoan.purchasePrice must be positive, got ${newLoan.purchasePrice}.`);
+  }
+
+  const firstSegment = amortizationSchedule(originalLoan, country, refinanceMonth);
+  const secondSegment = amortizationSchedule(newLoan, country, totalMonths - refinanceMonth);
+  const renumberedSecondSegment = secondSegment.map((row) => ({ ...row, month: refinanceMonth + row.month }));
+
+  return [...firstSegment, ...renumberedSecondSegment];
+}
+
+/**
  * Senior debt is the only tranche type commercial lenders actually
  * amortize under Canadian semi-annual compounding convention; mezzanine and
  * equity fall back to US monthly compounding. Equity tranches don't

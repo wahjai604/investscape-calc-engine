@@ -12,6 +12,7 @@ import {
   trancheAmortizationSchedule,
   buildPresaleDepositSchedule,
   averageDrawFactor,
+  splicedRefinanceSchedule,
 } from "../src/E2-amortization";
 import { MortgageInput, Tranche } from "../src/types";
 
@@ -376,6 +377,76 @@ describe("trancheAmortizationSchedule", () => {
       };
       expect(() => trancheAmortizationSchedule(wrongRepaymentType, "monthly")).toThrow(/scurve/);
     });
+  });
+});
+
+describe("splicedRefinanceSchedule", () => {
+  const originalLoan: MortgageInput = {
+    purchasePrice: 500000,
+    downPaymentPercent: 0,
+    annualInterestRate: 0.06,
+    amortizationYears: 25,
+  };
+  const newLoan: MortgageInput = {
+    purchasePrice: 450000,
+    downPaymentPercent: 0,
+    annualInterestRate: 0.04,
+    amortizationYears: 25,
+  };
+
+  it("segment boundary is exact: row 24 matches the original loan's standalone schedule, row 25 matches the new loan's standalone schedule", () => {
+    const spliced = splicedRefinanceSchedule(originalLoan, 24, newLoan, "Canada", 60);
+
+    const standaloneOriginal = amortizationSchedule(originalLoan, "Canada", 24);
+    const row24 = spliced.find((r) => r.month === 24)!;
+    expect(row24.closingBalance).toBeCloseTo(standaloneOriginal[23].closingBalance, 6);
+
+    const standaloneNew = amortizationSchedule(newLoan, "Canada", 36);
+    const row25 = spliced.find((r) => r.month === 25)!;
+    expect(row25.closingBalance).toBeCloseTo(standaloneNew[0].closingBalance, 6);
+  });
+
+  it("produces totalMonths rows with no gaps or duplicates, months running 1..totalMonths", () => {
+    const spliced = splicedRefinanceSchedule(originalLoan, 24, newLoan, "Canada", 60);
+
+    expect(spliced).toHaveLength(60);
+    const months = spliced.map((r) => r.month);
+    expect(new Set(months).size).toBe(60);
+    expect(months).toEqual(Array.from({ length: 60 }, (_, i) => i + 1));
+  });
+
+  it("interestPaid drops noticeably at the segment boundary, proving the new loan's rate is genuinely used", () => {
+    const spliced = splicedRefinanceSchedule(originalLoan, 24, newLoan, "Canada", 60);
+
+    const lastOriginalRow = spliced.find((r) => r.month === 24)!;
+    const firstNewRow = spliced.find((r) => r.month === 25)!;
+
+    expect(firstNewRow.interestPaid).toBeLessThan(lastOriginalRow.interestPaid);
+  });
+
+  it("throws when refinanceMonth is not a positive integer less than totalMonths", () => {
+    expect(() => splicedRefinanceSchedule(originalLoan, 0, newLoan, "Canada", 60)).toThrow(/refinanceMonth/);
+    expect(() => splicedRefinanceSchedule(originalLoan, -5, newLoan, "Canada", 60)).toThrow(/refinanceMonth/);
+    expect(() => splicedRefinanceSchedule(originalLoan, 60, newLoan, "Canada", 60)).toThrow(/refinanceMonth/);
+    expect(() => splicedRefinanceSchedule(originalLoan, 61, newLoan, "Canada", 60)).toThrow(/refinanceMonth/);
+  });
+
+  it("throws when newLoan.purchasePrice is zero or negative", () => {
+    const zeroPrice: MortgageInput = { ...newLoan, purchasePrice: 0 };
+    const negativePrice: MortgageInput = { ...newLoan, purchasePrice: -100 };
+
+    expect(() => splicedRefinanceSchedule(originalLoan, 24, zeroPrice, "Canada", 60)).toThrow(/purchasePrice/);
+    expect(() => splicedRefinanceSchedule(originalLoan, 24, negativePrice, "Canada", 60)).toThrow(/purchasePrice/);
+  });
+
+  it("does not mutate the originalLoan or newLoan objects passed in", () => {
+    const originalLoanCopy = { ...originalLoan };
+    const newLoanCopy = { ...newLoan };
+
+    splicedRefinanceSchedule(originalLoan, 24, newLoan, "Canada", 60);
+
+    expect(originalLoan).toEqual(originalLoanCopy);
+    expect(newLoan).toEqual(newLoanCopy);
   });
 });
 
